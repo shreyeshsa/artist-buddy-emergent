@@ -12,15 +12,21 @@ export const drawGrid = (
   lineWidth: number,
   lineOpacity: number,
   lineColor: string,
-  showDiagonals: boolean
+  showDiagonals: boolean,
+  showGridNumbers: boolean
 ) => {
   // Set line style
   ctx.strokeStyle = lineColor;
   ctx.globalAlpha = lineOpacity / 100;
   ctx.lineWidth = lineWidth;
   
+  // Count grid cells
+  const numCols = Math.ceil(width / gridSize);
+  const numRows = Math.ceil(height / gridSize);
+  
   // Draw vertical lines
-  for (let x = 0; x <= width; x += gridSize) {
+  for (let i = 0; i <= numCols; i++) {
+    const x = i * gridSize;
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
@@ -28,7 +34,8 @@ export const drawGrid = (
   }
   
   // Draw horizontal lines
-  for (let y = 0; y <= height; y += gridSize) {
+  for (let i = 0; i <= numRows; i++) {
+    const y = i * gridSize;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(width, y);
@@ -52,32 +59,66 @@ export const drawGrid = (
     }
   }
   
+  // Draw grid numbers if enabled
+  if (showGridNumbers) {
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = lineColor;
+    ctx.font = "10px Arial";
+    ctx.textAlign = "center";
+    
+    // Draw column numbers (top)
+    for (let i = 1; i <= numCols; i++) {
+      const x = i * gridSize - gridSize / 2;
+      ctx.fillText(i.toString(), x, 10);
+    }
+    
+    // Draw row numbers (left side)
+    ctx.textAlign = "right";
+    for (let i = 1; i <= numRows; i++) {
+      const y = i * gridSize - gridSize / 2;
+      ctx.fillText(i.toString(), 10, y + 3);
+    }
+  }
+  
   // Reset opacity
   ctx.globalAlpha = 1;
 };
 
 // Calculate canvas dimensions based on size and orientation
-export const getCanvasDimensions = (canvasSize: string, orientation: string) => {
+export const getCanvasDimensions = (
+  canvasSize: string, 
+  orientation: string,
+  customWidth?: number,
+  customHeight?: number,
+  customUnit?: "cm" | "inches"
+) => {
   let width = 0;
   let height = 0;
   
-  // Set sizes in pixels (approximate A4, A3, A2 at 72 PPI)
-  switch (canvasSize) {
-    case 'a4':
-      width = 595;
-      height = 842;
-      break;
-    case 'a3':
-      width = 842;
-      height = 1191;
-      break;
-    case 'a2':
-      width = 1191;
-      height = 1684;
-      break;
-    default:
-      width = 595;
-      height = 842;
+  if (canvasSize === "custom" && customWidth && customHeight) {
+    // Convert cm or inches to pixels (approximate at 72 DPI)
+    const conversionFactor = customUnit === "cm" ? 28.35 : 72; // 1cm ≈ 28.35px, 1in = 72px at 72 DPI
+    width = Math.round(customWidth * conversionFactor);
+    height = Math.round(customHeight * conversionFactor);
+  } else {
+    // Set sizes in pixels (approximate A4, A3, A2 at 72 PPI)
+    switch (canvasSize) {
+      case 'a4':
+        width = 595;
+        height = 842;
+        break;
+      case 'a3':
+        width = 842;
+        height = 1191;
+        break;
+      case 'a2':
+        width = 1191;
+        height = 1684;
+        break;
+      default:
+        width = 595;
+        height = 842;
+    }
   }
   
   // Swap dimensions for landscape

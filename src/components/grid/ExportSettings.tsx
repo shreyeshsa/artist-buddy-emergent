@@ -1,8 +1,10 @@
 
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Download } from "lucide-react";
 
 interface ExportSettingsProps {
@@ -10,11 +12,16 @@ interface ExportSettingsProps {
 }
 
 const ExportSettings = ({ onExport }: ExportSettingsProps) => {
+  const [format, setFormat] = useState("png");
+  const [quality, setQuality] = useState("high");
+  const [includeGrid, setIncludeGrid] = useState(true);
+  const [customDpi, setCustomDpi] = useState("300");
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="export-format">Format</Label>
-        <Select defaultValue="png">
+        <Select defaultValue="png" onValueChange={setFormat}>
           <SelectTrigger id="export-format">
             <SelectValue placeholder="Select format" />
           </SelectTrigger>
@@ -27,7 +34,7 @@ const ExportSettings = ({ onExport }: ExportSettingsProps) => {
       
       <div className="space-y-2">
         <Label htmlFor="export-quality">Quality</Label>
-        <Select defaultValue="high">
+        <Select defaultValue="high" onValueChange={setQuality}>
           <SelectTrigger id="export-quality">
             <SelectValue placeholder="Select quality" />
           </SelectTrigger>
@@ -39,8 +46,26 @@ const ExportSettings = ({ onExport }: ExportSettingsProps) => {
         </Select>
       </div>
       
+      {quality === "custom" && (
+        <div className="space-y-2">
+          <Label htmlFor="custom-dpi">Custom DPI</Label>
+          <Input 
+            id="custom-dpi" 
+            type="number" 
+            min="72" 
+            max="600" 
+            value={customDpi}
+            onChange={(e) => setCustomDpi(e.target.value)}
+          />
+        </div>
+      )}
+      
       <div className="flex items-center space-x-2">
-        <Switch id="include-grid" defaultChecked />
+        <Switch 
+          id="include-grid" 
+          defaultChecked={includeGrid}
+          onCheckedChange={setIncludeGrid}
+        />
         <Label htmlFor="include-grid">Include Grid in Export</Label>
       </div>
       

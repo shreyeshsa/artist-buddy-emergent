@@ -4,8 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import ColorMixer from "@/components/color-theory/ColorMixer";
 
 // Function to convert HSV to RGB
 const hsvToRgb = (h: number, s: number, v: number) => {
@@ -114,6 +116,7 @@ const ColorTheoryTab = () => {
     triadic: ["#EC407A", "#40EC7A", "#7A40EC"],
     splitComplementary: ["#EC407A", "#40BCEC", "#40EC5C"]
   });
+  const [isColorMixerOpen, setIsColorMixerOpen] = useState(false);
   const colorWheelRef = useRef<HTMLCanvasElement>(null);
   const isDraggingRef = useRef(false);
   
@@ -335,7 +338,7 @@ const ColorTheoryTab = () => {
           <div className="space-y-4">
             <Button 
               className="w-full bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
-              onClick={() => toast.info("Color Mixer will open in a separate panel")}
+              onClick={() => setIsColorMixerOpen(true)}
             >
               Try Color Mixer
             </Button>
@@ -346,6 +349,13 @@ const ColorTheoryTab = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Color Mixer Dialog */}
+      <Dialog open={isColorMixerOpen} onOpenChange={setIsColorMixerOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <ColorMixer onClose={() => setIsColorMixerOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

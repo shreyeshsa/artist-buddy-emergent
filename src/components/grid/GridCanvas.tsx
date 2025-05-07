@@ -11,8 +11,12 @@ interface GridCanvasProps {
   lineWidth: number;
   lineOpacity: number;
   showDiagonals: boolean;
+  showGridNumbers: boolean;
   lineColor: string;
   image: string | null;
+  customWidth?: number;
+  customHeight?: number;
+  customUnit?: "cm" | "inches";
   onUploadImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -23,8 +27,12 @@ const GridCanvas = ({
   lineWidth,
   lineOpacity,
   showDiagonals,
+  showGridNumbers,
   lineColor,
   image,
+  customWidth,
+  customHeight,
+  customUnit,
   onUploadImage,
 }: GridCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,7 +52,7 @@ const GridCanvas = ({
   // Update canvas dimensions when size or orientation changes
   useEffect(() => {
     updateCanvasSize();
-  }, [canvasSize, orientation]);
+  }, [canvasSize, orientation, customWidth, customHeight, customUnit]);
 
   // Draw grid when settings change
   useEffect(() => {
@@ -57,31 +65,39 @@ const GridCanvas = ({
         () => drawGridLines()
       );
     }
-  }, [gridSize, lineWidth, lineOpacity, showDiagonals, lineColor, image]);
+  }, [gridSize, lineWidth, lineOpacity, showDiagonals, showGridNumbers, lineColor, image]);
 
   const updateCanvasSize = () => {
     if (!canvasRef.current) return;
     
-    // Set sizes in pixels (approximate A4, A3, A2 at 72 PPI)
+    // Calculate canvas dimensions based on selected size and orientation
     let width = 0;
     let height = 0;
     
-    switch (canvasSize) {
-      case 'a4':
-        width = 595;
-        height = 842;
-        break;
-      case 'a3':
-        width = 842;
-        height = 1191;
-        break;
-      case 'a2':
-        width = 1191;
-        height = 1684;
-        break;
-      default:
-        width = 595;
-        height = 842;
+    if (canvasSize === "custom" && customWidth && customHeight) {
+      // Convert cm or inches to pixels (approximate at 72 DPI)
+      const conversionFactor = customUnit === "cm" ? 28.35 : 72; // 1cm ≈ 28.35px, 1in = 72px at 72 DPI
+      width = Math.round(customWidth * conversionFactor);
+      height = Math.round(customHeight * conversionFactor);
+    } else {
+      // Set sizes in pixels (approximate A4, A3, A2 at 72 PPI)
+      switch (canvasSize) {
+        case 'a4':
+          width = 595;
+          height = 842;
+          break;
+        case 'a3':
+          width = 842;
+          height = 1191;
+          break;
+        case 'a2':
+          width = 1191;
+          height = 1684;
+          break;
+        default:
+          width = 595;
+          height = 842;
+      }
     }
     
     // Swap dimensions for landscape
@@ -117,7 +133,8 @@ const GridCanvas = ({
       lineWidth,
       lineOpacity,
       lineColor,
-      showDiagonals
+      showDiagonals,
+      showGridNumbers
     );
   };
 

@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Droplet, Plus, Star } from "lucide-react";
+import { Upload, Droplet, Plus, Star, ZoomIn, ZoomOut, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Slider } from "@/components/ui/slider";
 
 // Mock data for color matches
 const pencilMatches = [
@@ -65,6 +66,9 @@ const ColorPickerTab = () => {
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPickingColor, setIsPickingColor] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [showColorPreview, setShowColorPreview] = useState(false);
+  const [colorPreview, setColorPreview] = useState({ color: "#FFFFFF", x: 0, y: 0 });
   
   // Calculate RGB from HEX when selectedColor changes
   useEffect(() => {
@@ -108,8 +112,8 @@ const ColorPickerTab = () => {
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const x = (event.clientX - rect.left) / zoomLevel;
+    const y = (event.clientY - rect.top) / zoomLevel;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -119,7 +123,43 @@ const ColorPickerTab = () => {
     
     setSelectedColor(hex);
     setIsPickingColor(false);
+    setShowColorPreview(false);
     toast.success('Color picked successfully');
+  };
+  
+  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isPickingColor || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / zoomLevel;
+    const y = (event.clientY - rect.top) / zoomLevel;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    try {
+      const pixelData = ctx.getImageData(x, y, 1, 1).data;
+      const hex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+      setColorPreview({ color: hex, x: event.clientX, y: event.clientY });
+      setShowColorPreview(true);
+    } catch (e) {
+      // Ignore errors when moving outside the canvas
+    }
+  };
+  
+  const handleCanvasMouseLeave = () => {
+    if (isPickingColor) {
+      setShowColorPreview(false);
+    }
+  };
+  
+  const zoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.5, 4));
+  };
+  
+  const zoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.5, 0.5));
   };
   
   // Draw the image on the canvas when it changes
@@ -150,16 +190,37 @@ const ColorPickerTab = () => {
       </div>
 
       <Card className="mb-6 overflow-hidden">
-        <div className="aspect-[3/2] bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center">
+        <div className="aspect-[3/2] bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-auto">
           {image ? (
-            <canvas 
-              ref={canvasRef} 
-              onClick={handleCanvasClick}
-              className={cn(
-                "max-w-full max-h-full",
-                isPickingColor ? "cursor-crosshair" : "cursor-default"
+            <div className="relative">
+              <canvas 
+                ref={canvasRef} 
+                onClick={handleCanvasClick}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseLeave={handleCanvasMouseLeave}
+                className={cn(
+                  "max-h-[500px]",
+                  isPickingColor ? "cursor-crosshair" : "cursor-default"
+                )}
+                style={{ 
+                  transform: `scale(${zoomLevel})`, 
+                  transformOrigin: 'top left',
+                  transition: 'transform 0.2s ease-out'
+                }}
+              />
+              
+              {/* Color preview bubble */}
+              {showColorPreview && (
+                <div
+                  className="absolute rounded-full border-2 border-white shadow-lg w-12 h-12 pointer-events-none z-10"
+                  style={{
+                    backgroundColor: colorPreview.color,
+                    left: `calc(${colorPreview.x}px + 20px)`,
+                    top: `calc(${colorPreview.y}px - 30px)`,
+                  }}
+                />
               )}
-            />
+            </div>
           ) : (
             <div className="text-center px-4">
               <p className="text-muted-foreground mb-4">Upload an image to pick colors</p>
@@ -182,18 +243,41 @@ const ColorPickerTab = () => {
             </div>
           )}
           
-          {/* Floating action button for color picking */}
+          {/* Floating action buttons */}
           {image && (
-            <Button 
-              size="icon" 
-              className={cn(
-                "absolute bottom-4 right-4 rounded-full shadow-lg",
-                isPickingColor ? "bg-green-500 hover:bg-green-600" : "bg-primary hover:bg-primary/90"
-              )}
-              onClick={handlePickColor}
-            >
-              <Droplet className="h-5 w-5" />
-            </Button>
+            <div className="absolute bottom-4 right-4 flex flex-col space-y-2">
+              <Button 
+                size="icon" 
+                className="rounded-full shadow-lg bg-background"
+                onClick={zoomIn}
+              >
+                <ZoomIn className="h-5 w-5" />
+              </Button>
+              <Button 
+                size="icon" 
+                className="rounded-full shadow-lg bg-background"
+                onClick={zoomOut}
+              >
+                <ZoomOut className="h-5 w-5" />
+              </Button>
+              <Button 
+                size="icon" 
+                className={cn(
+                  "rounded-full shadow-lg",
+                  isPickingColor ? "bg-green-500 hover:bg-green-600" : "bg-primary hover:bg-primary/90"
+                )}
+                onClick={handlePickColor}
+              >
+                <Eye className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
+          
+          {/* Zoom indicator */}
+          {image && (
+            <div className="absolute top-2 right-2 bg-background rounded-md px-2 py-1 text-xs font-medium">
+              {Math.round(zoomLevel * 100)}%
+            </div>
           )}
         </div>
       </Card>

@@ -2,16 +2,17 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
 import { Grid, PenTool, Palette, BookOpen, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
 import GridTab from "@/components/tabs/GridTab";
 import ColorPickerTab from "@/components/tabs/ColorPickerTab";
 import ColorTheoryTab from "@/components/tabs/ColorTheoryTab";
-import ColorReferenceTab from "@/components/tabs/ColorReferenceTab";
+import YourPaletteTab from "@/components/tabs/YourPaletteTab";
 
-type TabType = "grid" | "colorPicker" | "colorTheory" | "colorReference";
+type TabType = "grid" | "colorPicker" | "colorTheory" | "yourPalette";
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
@@ -21,36 +22,13 @@ const AppLayout = () => {
     grid: <GridTab />,
     colorPicker: <ColorPickerTab />,
     colorTheory: <ColorTheoryTab />,
-    colorReference: <ColorReferenceTab />,
+    yourPalette: <YourPaletteTab />,
   };
-
-  const tabs = [
-    {
-      id: "grid",
-      label: "Grids",
-      icon: <Grid className="h-5 w-5" />,
-    },
-    {
-      id: "colorPicker",
-      label: "Color Picker",
-      icon: <PenTool className="h-5 w-5" />,
-    },
-    {
-      id: "colorTheory",
-      label: "Color Theory",
-      icon: <Palette className="h-5 w-5" />,
-    },
-    {
-      id: "colorReference",
-      label: "Reference",
-      icon: <BookOpen className="h-5 w-5" />,
-    },
-  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <header className="p-4 flex justify-between items-center border-b">
+      <header className="p-4 flex justify-between items-center border-b sticky top-0 z-10 bg-background">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-artify-pink to-artify-purple flex items-center justify-center">
             <svg
@@ -68,8 +46,9 @@ const AppLayout = () => {
               />
             </svg>
           </div>
-          <h1 className="text-lg font-bold hidden sm:inline-block">Your Artist Buddy by aasuri</h1>
+          <h1 className="text-lg font-bold">Your Artist Buddy by aasuri</h1>
         </div>
+        
         <div className="flex items-center space-x-2">
           <ThemeToggle />
           <Dialog>
@@ -95,14 +74,77 @@ const AppLayout = () => {
           </Dialog>
         </div>
       </header>
+      
+      {/* Navigation Menu */}
+      <div className="border-b sticky top-[73px] z-10 bg-background">
+        <div className="container px-4 py-2">
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <Button 
+                  className={cn(
+                    "px-4",
+                    activeTab === "grid" 
+                      ? "bg-accent text-accent-foreground" 
+                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
+                  )}
+                  onClick={() => setActiveTab("grid")}
+                >
+                  <Grid className="h-4 w-4 mr-2" />
+                  Grids
+                </Button>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Button 
+                  className={cn(
+                    "px-4",
+                    activeTab === "colorPicker" 
+                      ? "bg-accent text-accent-foreground" 
+                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
+                  )}
+                  onClick={() => setActiveTab("colorPicker")}
+                >
+                  <PenTool className="h-4 w-4 mr-2" />
+                  Color Picker
+                </Button>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Button 
+                  className={cn(
+                    "px-4",
+                    activeTab === "colorTheory" 
+                      ? "bg-accent text-accent-foreground" 
+                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
+                  )}
+                  onClick={() => setActiveTab("colorTheory")}
+                >
+                  <Palette className="h-4 w-4 mr-2" />
+                  Color Theory
+                </Button>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Button 
+                  className={cn(
+                    "px-4",
+                    activeTab === "yourPalette" 
+                      ? "bg-accent text-accent-foreground" 
+                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
+                  )}
+                  onClick={() => setActiveTab("yourPalette")}
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Your Palette
+                </Button>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 relative overflow-y-auto">
         <div className="animate-in">{tabComponents[activeTab]}</div>
       </main>
-
-      {/* Bottom Nav */}
-      <BottomNavigation tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab as any} />
     </div>
   );
 };

@@ -8,11 +8,13 @@ interface GridSettingsProps {
   lineWidth: number;
   lineOpacity: number;
   showDiagonals: boolean;
+  showGridNumbers: boolean;
   lineColor: string;
   onGridSizeChange: (value: number) => void;
   onLineWidthChange: (value: number) => void;
   onLineOpacityChange: (value: number) => void;
   onShowDiagonalsChange: (value: boolean) => void;
+  onShowGridNumbersChange: (value: boolean) => void;
   onLineColorChange: (value: string) => void;
 }
 
@@ -21,24 +23,29 @@ const GridSettings = ({
   lineWidth,
   lineOpacity,
   showDiagonals,
+  showGridNumbers,
   lineColor,
   onGridSizeChange,
   onLineWidthChange,
   onLineOpacityChange,
   onShowDiagonalsChange,
+  onShowGridNumbersChange,
   onLineColorChange
 }: GridSettingsProps) => {
+  // Convert gridSize to centimeters (1cm = ~28.35 pixels at 72 DPI)
+  const gridSizeCm = (gridSize / 28.35).toFixed(1);
+  
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="flex justify-between">
-          <Label htmlFor="grid-size">Grid Size: {gridSize}px</Label>
+          <Label htmlFor="grid-size">Grid Size: {gridSizeCm}cm</Label>
         </div>
         <Slider 
           id="grid-size"
-          min={5} 
-          max={100} 
-          step={1} 
+          min={14} // 0.5cm
+          max={141} // 5cm
+          step={7} // 0.25cm
           value={[gridSize]} 
           onValueChange={(values) => onGridSizeChange(values[0])} 
         />
@@ -79,6 +86,15 @@ const GridSettings = ({
           onCheckedChange={onShowDiagonalsChange} 
         />
         <Label htmlFor="diagonals">Show Diagonals</Label>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Switch 
+          id="grid-numbers" 
+          checked={showGridNumbers} 
+          onCheckedChange={onShowGridNumbersChange} 
+        />
+        <Label htmlFor="grid-numbers">Show Grid Numbers</Label>
       </div>
       
       <div className="space-y-2">

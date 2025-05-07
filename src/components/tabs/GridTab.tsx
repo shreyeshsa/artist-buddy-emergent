@@ -12,10 +12,16 @@ const GridTab = () => {
   // State for canvas settings
   const [canvasSize, setCanvasSize] = useState("a4");
   const [orientation, setOrientation] = useState("portrait");
-  const [gridSize, setGridSize] = useState(20);
+  const [customWidth, setCustomWidth] = useState(21); // A4 width in cm
+  const [customHeight, setCustomHeight] = useState(29.7); // A4 height in cm
+  const [customUnit, setCustomUnit] = useState<"cm" | "inches">("cm");
+  
+  // State for grid settings
+  const [gridSize, setGridSize] = useState(28); // ~1cm
   const [lineWidth, setLineWidth] = useState(1);
   const [lineOpacity, setLineOpacity] = useState(50);
   const [showDiagonals, setShowDiagonals] = useState(false);
+  const [showGridNumbers, setShowGridNumbers] = useState(false);
   const [lineColor, setLineColor] = useState("#333333");
   
   // Image handling
@@ -45,6 +51,13 @@ const GridTab = () => {
       toast.error('Failed to load image');
     };
     reader.readAsDataURL(file);
+  };
+
+  // Handle custom dimensions change
+  const handleCustomDimensionsChange = (width: number, height: number, unit: "cm" | "inches") => {
+    setCustomWidth(width);
+    setCustomHeight(height);
+    setCustomUnit(unit);
   };
 
   // Export canvas
@@ -85,8 +98,12 @@ const GridTab = () => {
         lineWidth={lineWidth}
         lineOpacity={lineOpacity}
         showDiagonals={showDiagonals}
+        showGridNumbers={showGridNumbers}
         lineColor={lineColor}
         image={image}
+        customWidth={customWidth}
+        customHeight={customHeight}
+        customUnit={customUnit}
         onUploadImage={handleImageUpload}
       />
 
@@ -102,8 +119,12 @@ const GridTab = () => {
           <CanvasSettings 
             canvasSize={canvasSize}
             orientation={orientation}
+            customWidth={customWidth}
+            customHeight={customHeight}
+            customUnit={customUnit}
             onCanvasSizeChange={setCanvasSize}
             onOrientationChange={setOrientation}
+            onCustomDimensionsChange={handleCustomDimensionsChange}
             onImportClick={() => fileInputRef.current?.click()}
           />
         </TabsContent>
@@ -115,11 +136,13 @@ const GridTab = () => {
             lineWidth={lineWidth}
             lineOpacity={lineOpacity}
             showDiagonals={showDiagonals}
+            showGridNumbers={showGridNumbers}
             lineColor={lineColor}
             onGridSizeChange={setGridSize}
             onLineWidthChange={setLineWidth}
             onLineOpacityChange={setLineOpacity}
             onShowDiagonalsChange={setShowDiagonals}
+            onShowGridNumbersChange={setShowGridNumbers}
             onLineColorChange={setLineColor}
           />
         </TabsContent>
