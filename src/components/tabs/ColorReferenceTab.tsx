@@ -29,6 +29,18 @@ const pencilColors = [
   { id: 15, brand: "Caran d'Ache", name: "Light Purple", code: "CA131", color: "#D8BFD8", sets: ["80"] },
 ];
 
+// Define the type for pencil color with accuracy
+type PencilColorWithAccuracy = {
+  id: number;
+  brand: string;
+  name: string;
+  code: string;
+  color: string;
+  sets: string[];
+  distance?: number;
+  accuracy?: number;
+};
+
 // Function to convert RGB to HEX
 const rgbToHex = (r: number, g: number, b: number) => {
   return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase();
@@ -51,7 +63,7 @@ const colorDistance = (color1: string, color2: string) => {
 };
 
 // Function to find closest pencil matches
-const findClosestPencils = (targetColor: string) => {
+const findClosestPencils = (targetColor: string): PencilColorWithAccuracy[] => {
   return pencilColors
     .map(pencil => ({
       ...pencil,
@@ -94,7 +106,7 @@ const ColorReferenceTab = () => {
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [extractedPalette, setExtractedPalette] = useState<string[]>([]);
-  const [paletteMatches, setPaletteMatches] = useState<typeof pencilColors>([]);
+  const [paletteMatches, setPaletteMatches] = useState<PencilColorWithAccuracy[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
