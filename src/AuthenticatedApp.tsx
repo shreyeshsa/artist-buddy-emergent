@@ -1,13 +1,12 @@
 
-import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import Login from "./Login";
+import Login from "@/pages/Login";
 import AppLayout from "@/components/AppLayout";
 
-const Index = () => {
+const AuthenticatedApp = () => {
   const { isAuthenticated } = useAuth();
 
   return isAuthenticated ? <AppLayout /> : <Login />;
 };
 
-export default Index;
+export default AuthenticatedApp;
