@@ -68,7 +68,7 @@ const AppLayout = () => {
               />
             </svg>
           </div>
-          <h1 className="text-lg font-bold hidden sm:inline-block">ArtifyPalette Lab</h1>
+          <h1 className="text-lg font-bold hidden sm:inline-block">Your Artist Buddy by aasuri</h1>
         </div>
         <div className="flex items-center space-x-2">
           <ThemeToggle />

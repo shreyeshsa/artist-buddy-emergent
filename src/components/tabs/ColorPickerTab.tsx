@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Droplet, Plus, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Mock data for color matches
 const pencilMatches = [
@@ -40,9 +41,106 @@ const mixSuggestions = [
   },
 ];
 
+// Function to find the closest color match
+const findColorMatches = (targetColor: string) => {
+  // In a real implementation, this would compare the target color to a database of pencil/paint colors
+  // For this demo, we'll just return the mock data
+  return {
+    pencils: pencilMatches,
+    paints: paintMatches,
+    mixes: mixSuggestions
+  };
+};
+
+// Function to convert RGB to HEX
+const rgbToHex = (r: number, g: number, b: number) => {
+  return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase();
+};
+
 const ColorPickerTab = () => {
   const [selectedColor, setSelectedColor] = useState("#EC407A");
   const [rgbValue, setRgbValue] = useState("236, 64, 122");
+  const [image, setImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isPickingColor, setIsPickingColor] = useState(false);
+  
+  // Calculate RGB from HEX when selectedColor changes
+  useEffect(() => {
+    const hex = selectedColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    setRgbValue(`${r}, ${g}, ${b}`);
+  }, [selectedColor]);
+  
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setImage(e.target.result as string);
+        toast.success('Image uploaded successfully');
+      }
+    };
+    reader.onerror = () => {
+      toast.error('Failed to load image');
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handlePickColor = () => {
+    setIsPickingColor(true);
+    toast.info('Click on the image to pick a color');
+  };
+  
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isPickingColor || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const pixelData = ctx.getImageData(x, y, 1, 1).data;
+    const hex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+    
+    setSelectedColor(hex);
+    setIsPickingColor(false);
+    toast.success('Color picked successfully');
+  };
+  
+  // Draw the image on the canvas when it changes
+  useEffect(() => {
+    if (!image || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      // Set canvas dimensions to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Draw image on canvas
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = image;
+  }, [image]);
 
   return (
     <div className="p-4 pb-20">
@@ -53,32 +151,50 @@ const ColorPickerTab = () => {
 
       <Card className="mb-6 overflow-hidden">
         <div className="aspect-[3/2] bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center">
-          {/* This would be replaced with actual image color picker implementation */}
-          <div className="text-center px-4">
-            <p className="text-muted-foreground mb-4">Upload an image to pick colors</p>
-            <Button 
-              variant="outline"
-              className="mr-2"
-              onClick={() => document.getElementById('color-image-input')?.click()}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Image
-            </Button>
-            <input 
-              id="color-image-input" 
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
+          {image ? (
+            <canvas 
+              ref={canvasRef} 
+              onClick={handleCanvasClick}
+              className={cn(
+                "max-w-full max-h-full",
+                isPickingColor ? "cursor-crosshair" : "cursor-default"
+              )}
             />
-          </div>
+          ) : (
+            <div className="text-center px-4">
+              <p className="text-muted-foreground mb-4">Upload an image to pick colors</p>
+              <Button 
+                variant="outline"
+                className="mr-2"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Image
+              </Button>
+              <input 
+                ref={fileInputRef}
+                id="color-image-input" 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleImageUpload}
+              />
+            </div>
+          )}
           
-          {/* Floating action button for quick actions */}
-          <Button 
-            size="icon" 
-            className="absolute bottom-4 right-4 rounded-full shadow-lg bg-primary hover:bg-primary/90"
-          >
-            <Droplet className="h-5 w-5" />
-          </Button>
+          {/* Floating action button for color picking */}
+          {image && (
+            <Button 
+              size="icon" 
+              className={cn(
+                "absolute bottom-4 right-4 rounded-full shadow-lg",
+                isPickingColor ? "bg-green-500 hover:bg-green-600" : "bg-primary hover:bg-primary/90"
+              )}
+              onClick={handlePickColor}
+            >
+              <Droplet className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </Card>
 
