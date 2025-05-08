@@ -43,10 +43,11 @@ const Login = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-center">
-              ArtifyPalette Lab
+              Your Artist Buddy
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-center">
               Enter the password to access your artist toolkit
+              <div className="text-xs mt-1 text-muted-foreground">Powered by Aasuri</div>
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>

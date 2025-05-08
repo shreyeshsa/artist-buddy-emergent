@@ -5,16 +5,17 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
-import { Grid, PenTool, Palette, BookOpen, LogOut } from "lucide-react";
+import { Grid, PenTool, Palette, BookOpen, LogOut, Droplet, EyeDropper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GridTab from "@/components/tabs/GridTab";
 import ColorPickerTab from "@/components/tabs/ColorPickerTab";
 import ColorTheoryTab from "@/components/tabs/ColorTheoryTab";
+import ColorMixerTab from "@/components/tabs/ColorMixerTab";
 import YourPaletteTab from "@/components/tabs/YourPaletteTab";
 import { BottomNavigation } from "./BottomNavigation";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-type TabType = "grid" | "colorPicker" | "colorTheory" | "yourPalette";
+type TabType = "grid" | "colorPicker" | "colorTheory" | "colorMixer" | "yourPalette";
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
@@ -25,13 +26,15 @@ const AppLayout = () => {
     grid: <GridTab />,
     colorPicker: <ColorPickerTab />,
     colorTheory: <ColorTheoryTab />,
+    colorMixer: <ColorMixerTab />,
     yourPalette: <YourPaletteTab />,
   };
 
   const tabs = [
     { id: "grid", label: "Grids", icon: <Grid className="h-5 w-5" /> },
-    { id: "colorPicker", label: "Color Picker", icon: <PenTool className="h-5 w-5" /> },
+    { id: "colorPicker", label: "Color Picker", icon: <EyeDropper className="h-5 w-5" /> },
     { id: "colorTheory", label: "Color Theory", icon: <Palette className="h-5 w-5" /> },
+    { id: "colorMixer", label: "Color Mixer", icon: <Droplet className="h-5 w-5" /> },
     { id: "yourPalette", label: "Your Palette", icon: <BookOpen className="h-5 w-5" /> },
   ];
 
@@ -87,7 +90,7 @@ const AppLayout = () => {
       
       {/* Navigation Menu - Mobile Bottom, Desktop Top */}
       {!isMobile && (
-        <div className="border-b sticky top-[73px] z-10 bg-background overflow-x-auto">
+        <div className="border-b sticky top-[73px] z-10 bg-background overflow-x-auto shadow-sm">
           <div className="container px-4 py-2">
             <NavigationMenu>
               <NavigationMenuList className="flex flex-nowrap">
@@ -97,7 +100,7 @@ const AppLayout = () => {
                       className={cn(
                         "px-4 whitespace-nowrap",
                         activeTab === tab.id 
-                          ? "bg-accent text-accent-foreground" 
+                          ? "bg-accent text-accent-foreground font-medium" 
                           : "bg-transparent hover:bg-accent hover:text-accent-foreground"
                       )}
                       onClick={() => setActiveTab(tab.id as TabType)}

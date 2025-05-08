@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { EyeDropper, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface GridCanvasProps {
@@ -38,6 +38,10 @@ const GridCanvas = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [imageScale, setImageScale] = useState(1);
+  const [imgElement, setImgElement] = useState<HTMLImageElement | null>(null);
   
   // Update canvas dimensions based on size and orientation
   useEffect(() => {
@@ -78,12 +82,15 @@ const GridCanvas = ({
     }
 
     setCanvasDimensions({ width, height });
+    
+    // Reset image position when canvas size changes
+    setImagePosition({ x: 0, y: 0 });
   }, [canvasSize, orientation, customWidth, customHeight, customUnit]);
 
   // Draw grid on canvas whenever relevant props change
   useEffect(() => {
     drawCanvas();
-  }, [canvasDimensions, gridSize, lineWidth, lineOpacity, showDiagonals, showGridNumbers, lineColor, image]);
+  }, [canvasDimensions, gridSize, lineWidth, lineOpacity, showDiagonals, showGridNumbers, lineColor, image, imagePosition, imageScale]);
 
   // Function to draw the canvas with grid and image
   const drawCanvas = () => {
@@ -104,37 +111,50 @@ const GridCanvas = ({
 
     // Draw image if available
     if (image) {
-      const img = new Image();
-      img.onload = () => {
-        // Calculate scaling to fit canvas while maintaining aspect ratio
-        const imgRatio = img.width / img.height;
-        const canvasRatio = canvas.width / canvas.height;
-        
-        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-        
-        if (imgRatio > canvasRatio) {
-          // Image is wider than canvas
-          drawWidth = canvas.width;
-          drawHeight = canvas.width / imgRatio;
-          offsetY = (canvas.height - drawHeight) / 2;
-        } else {
-          // Image is taller than canvas
-          drawHeight = canvas.height;
-          drawWidth = canvas.height * imgRatio;
-          offsetX = (canvas.width - drawWidth) / 2;
-        }
-        
-        // Draw image centered on canvas
-        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-        
-        // Draw grid on top of the image
+      if (!imgElement) {
+        const img = new Image();
+        img.onload = () => {
+          setImgElement(img);
+          drawImageWithPosition(ctx, img);
+          drawGrid(ctx);
+        };
+        img.src = image;
+      } else {
+        drawImageWithPosition(ctx, imgElement);
         drawGrid(ctx);
-      };
-      img.src = image;
+      }
     } else {
       // No image, just draw the grid
       drawGrid(ctx);
     }
+  };
+
+  // Function to draw image with current position and scale
+  const drawImageWithPosition = (ctx: CanvasRenderingContext2D, img: HTMLImageElement) => {
+    // Calculate scaling to fit canvas while maintaining aspect ratio
+    const imgRatio = img.width / img.height;
+    const canvasRatio = canvasDimensions.width / canvasDimensions.height;
+    
+    let drawWidth, drawHeight;
+    
+    if (imgRatio > canvasRatio) {
+      // Image is wider than canvas
+      drawWidth = canvasDimensions.width * imageScale;
+      drawHeight = (canvasDimensions.width / imgRatio) * imageScale;
+    } else {
+      // Image is taller than canvas
+      drawHeight = canvasDimensions.height * imageScale;
+      drawWidth = (canvasDimensions.height * imgRatio) * imageScale;
+    }
+    
+    // Draw image with current position
+    ctx.drawImage(
+      img,
+      imagePosition.x + (canvasDimensions.width - drawWidth) / 2,
+      imagePosition.y + (canvasDimensions.height - drawHeight) / 2,
+      drawWidth,
+      drawHeight
+    );
   };
 
   // Function to draw the grid
@@ -242,36 +262,177 @@ const GridCanvas = ({
     fileInputRef.current?.click();
   };
 
+  // Handle mouse/touch events for image positioning
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!image) return;
+    setIsDraggingImage(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDraggingImage) return;
+
+    let clientX: number, clientY: number;
+    
+    if ('touches' in e) {
+      // Touch event
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      // Mouse event
+      clientX = e.clientX;
+      clientY = e.clientY;
+      e.preventDefault(); // Prevent text selection during drag
+    }
+    
+    // Calculate movement based on event movement
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    setImagePosition(prev => ({
+      x: prev.x + (clientX - (prev.clientX || clientX)),
+      y: prev.y + (clientY - (prev.clientY || clientY)),
+      clientX,
+      clientY,
+    }));
+  };
+
+  const handleMouseUp = () => {
+    setIsDraggingImage(false);
+    setImagePosition(prev => ({
+      x: prev.x,
+      y: prev.y
+    }));
+  };
+
+  // Handle pinch-to-zoom for touch devices
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2) {
+      // Store the initial distance between two fingers
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      
+      setImagePosition(prev => ({
+        ...prev,
+        initialPinchDistance: distance,
+        initialScale: imageScale
+      }));
+    } else {
+      handleMouseDown(e);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2 && imagePosition.initialPinchDistance && imagePosition.initialScale) {
+      // Calculate new distance between fingers
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      
+      // Calculate scale factor based on initial distance and current distance
+      const scale = (distance / imagePosition.initialPinchDistance) * imagePosition.initialScale;
+      setImageScale(Math.max(0.5, Math.min(3, scale))); // Limit scale between 0.5 and 3
+      
+      e.preventDefault();
+    } else {
+      handleMouseMove(e);
+    }
+  };
+
   return (
-    <div className="mb-6 border rounded-lg overflow-hidden bg-white relative">
+    <div className="mb-6 border rounded-lg overflow-hidden bg-white dark:bg-gray-800 relative">
       <div className="overflow-auto max-h-[70vh]">
         <div className="min-h-[300px] flex items-center justify-center p-4 relative">
           <canvas 
             ref={canvasRef}
-            className="max-w-full border shadow-md bg-white"
+            className="max-w-full border shadow-md bg-white cursor-move"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleMouseUp}
           />
           
           {!image && (
             <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-              <Button 
-                variant="outline"
-                className="bg-white/80 backdrop-blur-sm"
-                onClick={handleUploadClick}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Reference Image
-              </Button>
-              <input 
-                ref={fileInputRef}
-                type="file" 
-                accept="image/*" 
-                className="hidden"
-                onChange={onUploadImage}
-              />
+              <div className="p-6 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-center shadow-lg border border-muted">
+                <Upload className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">Upload Reference Image</h3>
+                <p className="text-sm text-muted-foreground mb-4">Drop an image here or click to browse</p>
+                <Button 
+                  variant="default"
+                  onClick={handleUploadClick}
+                  className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90 text-white"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Select Image
+                </Button>
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden"
+                  onChange={onUploadImage}
+                />
+              </div>
             </div>
           )}
         </div>
       </div>
+      
+      {image && (
+        <div className="p-3 border-t flex justify-between items-center bg-white dark:bg-gray-800">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setImageScale(prev => Math.min(prev + 0.1, 3))}
+            >
+              Zoom In
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setImageScale(prev => Math.max(prev - 0.1, 0.5))}
+            >
+              Zoom Out
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setImagePosition({ x: 0, y: 0 });
+                setImageScale(1);
+              }}
+            >
+              Reset
+            </Button>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleUploadClick}
+            className="h-8 w-8"
+          >
+            <Upload className="h-4 w-4" />
+          </Button>
+          <input 
+            ref={fileInputRef}
+            type="file" 
+            accept="image/*" 
+            className="hidden"
+            onChange={onUploadImage}
+          />
+        </div>
+      )}
     </div>
   );
 };
