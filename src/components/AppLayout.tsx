@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
-import { Grid, PenTool, Palette, BookOpen, LogOut, Droplet, EyeDropper } from "lucide-react";
+import { Grid, PenTool, Palette, BookOpen, LogOut, Droplet, Pipette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GridTab from "@/components/tabs/GridTab";
 import ColorPickerTab from "@/components/tabs/ColorPickerTab";
@@ -32,7 +32,7 @@ const AppLayout = () => {
 
   const tabs = [
     { id: "grid", label: "Grids", icon: <Grid className="h-5 w-5" /> },
-    { id: "colorPicker", label: "Color Picker", icon: <EyeDropper className="h-5 w-5" /> },
+    { id: "colorPicker", label: "Color Picker", icon: <Pipette className="h-5 w-5" /> },
     { id: "colorTheory", label: "Color Theory", icon: <Palette className="h-5 w-5" /> },
     { id: "colorMixer", label: "Color Mixer", icon: <Droplet className="h-5 w-5" /> },
     { id: "yourPalette", label: "Your Palette", icon: <BookOpen className="h-5 w-5" /> },

@@ -1,7 +1,6 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { EyeDropper, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface GridCanvasProps {
@@ -18,6 +17,15 @@ interface GridCanvasProps {
   customHeight: number;
   customUnit: "cm" | "inches";
   onUploadImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+interface ImagePosition {
+  x: number;
+  y: number;
+  clientX?: number;
+  clientY?: number;
+  initialPinchDistance?: number;
+  initialScale?: number;
 }
 
 const GridCanvas = ({
@@ -39,7 +47,7 @@ const GridCanvas = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const [isDraggingImage, setIsDraggingImage] = useState(false);
-  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [imagePosition, setImagePosition] = useState<ImagePosition>({ x: 0, y: 0 });
   const [imageScale, setImageScale] = useState(1);
   const [imgElement, setImgElement] = useState<HTMLImageElement | null>(null);
   

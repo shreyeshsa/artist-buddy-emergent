@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EyeDropper } from "lucide-react";
+import { Pipette } from "lucide-react";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { findClosestPencils, pencilColors } from "@/data/pencilColors";
-import { rgbToHexColor, colorDistance } from "@/utils/colorUtils";
+import { rgbToHexColor } from "@/utils/colorUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 // Color picker component
@@ -192,7 +192,7 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
                 onClick={toggleEyeDropper}
                 className={isEyeDropperMode ? "bg-artify-pink text-white" : ""}
               >
-                <EyeDropper className="h-4 w-4 mr-1" />
+                <Pipette className="h-4 w-4 mr-1" />
                 {isEyeDropperMode ? "Selecting..." : "Pick Color"}
               </Button>
               <div className="flex items-center gap-1">
