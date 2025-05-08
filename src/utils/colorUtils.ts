@@ -45,3 +45,6 @@ export const extractDominantColors = (imageData: ImageData, maxColors: number = 
     .slice(0, maxColors)
     .map(([color]) => color);
 };
+
+// Function to convert RGB to HEX with proper formatting (aliased for consistent naming)
+export const rgbToHexColor = rgbToHex;

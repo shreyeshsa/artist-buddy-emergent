@@ -8,13 +8,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { findClosestPencils, pencilColors } from "@/data/pencilColors";
-import { rgbToHexColor } from "@/utils/colorUtils";
+import { rgbToHexColor, colorDistance } from "@/utils/colorUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-
-// Function to convert RGB to HEX with proper formatting
-const rgbToHexColor = (r: number, g: number, b: number) => {
-  return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase();
-};
 
 const ColorPickerTab = () => {
   const [selectedColor, setSelectedColor] = useState("#EC407A");
@@ -120,22 +115,6 @@ const ColorPickerTab = () => {
     return suggestions
       .sort((a, b) => b.accuracy - a.accuracy)
       .slice(0, 3);
-  };
-  
-  // Calculate color distance
-  const colorDistance = (color1: string, color2: string) => {
-    const hex1 = color1.replace('#', '');
-    const hex2 = color2.replace('#', '');
-    
-    const r1 = parseInt(hex1.substring(0, 2), 16);
-    const g1 = parseInt(hex1.substring(2, 4), 16);
-    const b1 = parseInt(hex1.substring(4, 6), 16);
-    
-    const r2 = parseInt(hex2.substring(0, 2), 16);
-    const g2 = parseInt(hex2.substring(3, 4), 16);
-    const b2 = parseInt(hex2.substring(4, 6), 16);
-    
-    return Math.sqrt(Math.pow(r2 - r1, 2) + Math.pow(g2 - g1, 2) + Math.pow(b2 - b1, 2));
   };
   
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
