@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Download } from "lucide-react";
+import { Download, Share2 } from "lucide-react";
+import { toast } from "sonner";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 interface ExportSettingsProps {
   onExport: () => void;
@@ -16,6 +18,26 @@ const ExportSettings = ({ onExport }: ExportSettingsProps) => {
   const [quality, setQuality] = useState("high");
   const [includeGrid, setIncludeGrid] = useState(true);
   const [customDpi, setCustomDpi] = useState("300");
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  
+  const handleShare = async () => {
+    try {
+      // Check if Web Share API is supported
+      if (navigator.share) {
+        // Share image (in a real implementation, this would convert canvas to blob)
+        await navigator.share({
+          title: 'My Grid',
+          text: 'Check out this grid I created with Your Artist Buddy by Aasuri!',
+        });
+        toast.success('Shared successfully');
+      } else {
+        toast.error('Web Share API not supported on this browser');
+      }
+    } catch (error) {
+      toast.error('Failed to share');
+      console.error('Error sharing:', error);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -28,6 +50,7 @@ const ExportSettings = ({ onExport }: ExportSettingsProps) => {
           <SelectContent>
             <SelectItem value="png">PNG</SelectItem>
             <SelectItem value="jpeg">JPEG</SelectItem>
+            <SelectItem value="pdf">PDF</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -76,6 +99,21 @@ const ExportSettings = ({ onExport }: ExportSettingsProps) => {
         <Download className="h-4 w-4 mr-2" />
         Export Image
       </Button>
+      
+      {isMobile && (
+        <Button 
+          className="w-full"
+          variant="outline"
+          onClick={handleShare}
+        >
+          <Share2 className="h-4 w-4 mr-2" />
+          Share
+        </Button>
+      )}
+      
+      <div className="text-xs text-center text-muted-foreground">
+        Export your grid to use as a reference while drawing
+      </div>
     </div>
   );
 };

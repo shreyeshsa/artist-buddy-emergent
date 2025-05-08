@@ -11,12 +11,15 @@ import GridTab from "@/components/tabs/GridTab";
 import ColorPickerTab from "@/components/tabs/ColorPickerTab";
 import ColorTheoryTab from "@/components/tabs/ColorTheoryTab";
 import YourPaletteTab from "@/components/tabs/YourPaletteTab";
+import { BottomNavigation } from "./BottomNavigation";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 type TabType = "grid" | "colorPicker" | "colorTheory" | "yourPalette";
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
   const { logout } = useAuth();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const tabComponents = {
     grid: <GridTab />,
@@ -24,6 +27,13 @@ const AppLayout = () => {
     colorTheory: <ColorTheoryTab />,
     yourPalette: <YourPaletteTab />,
   };
+
+  const tabs = [
+    { id: "grid", label: "Grids", icon: <Grid className="h-5 w-5" /> },
+    { id: "colorPicker", label: "Color Picker", icon: <PenTool className="h-5 w-5" /> },
+    { id: "colorTheory", label: "Color Theory", icon: <Palette className="h-5 w-5" /> },
+    { id: "yourPalette", label: "Your Palette", icon: <BookOpen className="h-5 w-5" /> },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -46,7 +56,7 @@ const AppLayout = () => {
               />
             </svg>
           </div>
-          <h1 className="text-lg font-bold">Your Artist Buddy by aasuri</h1>
+          <h1 className="text-lg font-bold">Your Artist Buddy by Aasuri</h1>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -75,76 +85,47 @@ const AppLayout = () => {
         </div>
       </header>
       
-      {/* Navigation Menu */}
-      <div className="border-b sticky top-[73px] z-10 bg-background">
-        <div className="container px-4 py-2">
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <Button 
-                  className={cn(
-                    "px-4",
-                    activeTab === "grid" 
-                      ? "bg-accent text-accent-foreground" 
-                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
-                  )}
-                  onClick={() => setActiveTab("grid")}
-                >
-                  <Grid className="h-4 w-4 mr-2" />
-                  Grids
-                </Button>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Button 
-                  className={cn(
-                    "px-4",
-                    activeTab === "colorPicker" 
-                      ? "bg-accent text-accent-foreground" 
-                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
-                  )}
-                  onClick={() => setActiveTab("colorPicker")}
-                >
-                  <PenTool className="h-4 w-4 mr-2" />
-                  Color Picker
-                </Button>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Button 
-                  className={cn(
-                    "px-4",
-                    activeTab === "colorTheory" 
-                      ? "bg-accent text-accent-foreground" 
-                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
-                  )}
-                  onClick={() => setActiveTab("colorTheory")}
-                >
-                  <Palette className="h-4 w-4 mr-2" />
-                  Color Theory
-                </Button>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Button 
-                  className={cn(
-                    "px-4",
-                    activeTab === "yourPalette" 
-                      ? "bg-accent text-accent-foreground" 
-                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
-                  )}
-                  onClick={() => setActiveTab("yourPalette")}
-                >
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Your Palette
-                </Button>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+      {/* Navigation Menu - Mobile Bottom, Desktop Top */}
+      {!isMobile && (
+        <div className="border-b sticky top-[73px] z-10 bg-background overflow-x-auto">
+          <div className="container px-4 py-2">
+            <NavigationMenu>
+              <NavigationMenuList className="flex flex-nowrap">
+                {tabs.map(tab => (
+                  <NavigationMenuItem key={tab.id}>
+                    <Button 
+                      className={cn(
+                        "px-4 whitespace-nowrap",
+                        activeTab === tab.id 
+                          ? "bg-accent text-accent-foreground" 
+                          : "bg-transparent hover:bg-accent hover:text-accent-foreground"
+                      )}
+                      onClick={() => setActiveTab(tab.id as TabType)}
+                    >
+                      {tab.icon}
+                      <span className="ml-2">{tab.label}</span>
+                    </Button>
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
-      <main className="flex-1 relative overflow-y-auto">
+      <main className="flex-1 relative overflow-y-auto pb-16 md:pb-0">
         <div className="animate-in">{tabComponents[activeTab]}</div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <BottomNavigation 
+          tabs={tabs} 
+          activeTab={activeTab} 
+          setActiveTab={(id) => setActiveTab(id as TabType)} 
+        />
+      )}
     </div>
   );
 };
