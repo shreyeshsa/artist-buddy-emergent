@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,65 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const Login = () => {
   const [password, setPassword] = useState("");
   const { login } = useAuth();
+
+  // Add effect to remove Lovable badge from login screen
+  useEffect(() => {
+    // Find and remove the Lovable badge or link
+    const removeBadge = () => {
+      // Target any element with 'lovable' in its id, class, or content
+      const badges = document.querySelectorAll('[id*="lovable"], [class*="lovable"]');
+      badges.forEach(badge => {
+        if (badge.parentNode) {
+          badge.parentNode.removeChild(badge);
+        }
+      });
+      
+      // Also target elements with specific CSS classes that might be part of the badge
+      const badgeClasses = document.querySelectorAll('.fixed.bottom-0, .fixed.bottom-2, .fixed.bottom-4, .fixed.bottom-5');
+      badgeClasses.forEach(element => {
+        if (element.innerHTML && (
+            element.innerHTML.toLowerCase().includes('lovable') || 
+            element.innerHTML.toLowerCase().includes('made with') ||
+            element.innerHTML.toLowerCase().includes('powered by')
+        )) {
+          if (element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+        }
+      });
+      
+      // Remove elements with 'love' in the text that might be badges
+      document.querySelectorAll('a, div, span, p').forEach(el => {
+        if (el.textContent && (
+            el.textContent.toLowerCase().includes('made with') ||
+            el.textContent.toLowerCase().includes('powered by lovable')
+        )) {
+          const isFixed = 
+            window.getComputedStyle(el).position === 'fixed' || 
+            (el.parentElement && window.getComputedStyle(el.parentElement).position === 'fixed');
+          
+          if (isFixed && el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        }
+      });
+    };
+    
+    // Run once and then observe for any dynamically added elements
+    removeBadge();
+    
+    // Create a mutation observer to detect if the badge is added dynamically
+    const observer = new MutationObserver((mutations) => {
+      removeBadge();
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +106,16 @@ const Login = () => {
             </CardTitle>
             <CardDescription className="text-center">
               Enter the password to access your artist toolkit
-              <div className="text-xs mt-1 text-muted-foreground">Powered by Aasuri</div>
+              <div className="text-xs mt-1 text-muted-foreground">
+                Powered by <a 
+                  href="https://aasuri.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-artify-pink hover:underline"
+                >
+                  aasuri.com
+                </a>
+              </div>
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>

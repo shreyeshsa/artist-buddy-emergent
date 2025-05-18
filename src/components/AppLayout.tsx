@@ -195,6 +195,18 @@ const AppLayout = () => {
       {/* Main Content */}
       <main className="flex-1 relative overflow-y-auto pb-16 md:pb-0">
         <div className="animate-in">{tabComponents[activeTab]}</div>
+
+        {/* Footer with Aasuri link */}
+        <div className="text-center pb-4 text-xs text-muted-foreground mt-4">
+          Powered by <a 
+            href="https://aasuri.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-artify-pink hover:underline"
+          >
+            aasuri.com
+          </a>
+        </div>
       </main>
 
       {/* Mobile Bottom Navigation */}

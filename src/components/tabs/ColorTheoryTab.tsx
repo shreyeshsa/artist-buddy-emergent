@@ -326,48 +326,44 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
   const [shadeAmount, setShadeAmount] = useState(0);
   const [toneAmount, setToneAmount] = useState(0);
   const [resultColor, setResultColor] = useState(baseColor);
-  const [selectedHue, setSelectedHue] = useState(0);
   
-  // Calculate tints, shades, and tones with fixed mixing logic
+  // Improved function to properly blend colors
   const applyTintShadeAndTone = (color: string, tint: number, shade: number, tone: number) => {
     // Convert hex to RGB
-    const rgbColor = hexToRgb(color);
-    const r = rgbColor.r;
-    const g = rgbColor.g;
-    const b = rgbColor.b;
+    const rgb = hexToRgb(color);
     
-    // Apply tint (add white) - properly mix with base color
-    let rResult = r;
-    let gResult = g; 
-    let bResult = b;
+    // Apply tint (blend with white: 255, 255, 255)
+    let r = rgb.r;
+    let g = rgb.g;
+    let b = rgb.b;
     
-    // Apply tint (mix with white: 255, 255, 255)
+    // Apply tint first (mix with white)
     if (tint > 0) {
-      rResult = Math.round(r * (1 - tint/100) + 255 * (tint/100));
-      gResult = Math.round(g * (1 - tint/100) + 255 * (tint/100));
-      bResult = Math.round(b * (1 - tint/100) + 255 * (tint/100));
+      r = Math.round(r + (255 - r) * (tint / 100));
+      g = Math.round(g + (255 - g) * (tint / 100));
+      b = Math.round(b + (255 - b) * (tint / 100));
     }
     
-    // Apply shade (mix with black: 0, 0, 0)
+    // Apply shade (mix with black)
     if (shade > 0) {
-      rResult = Math.round(rResult * (1 - shade/100));
-      gResult = Math.round(gResult * (1 - shade/100));
-      bResult = Math.round(bResult * (1 - shade/100));
+      r = Math.round(r * (1 - shade / 100));
+      g = Math.round(g * (1 - shade / 100));
+      b = Math.round(b * (1 - shade / 100));
     }
     
-    // Apply tone (mix with gray: 128, 128, 128)
+    // Apply tone (mix with gray)
     if (tone > 0) {
-      rResult = Math.round(rResult * (1 - tone/100) + 128 * (tone/100));
-      gResult = Math.round(gResult * (1 - tone/100) + 128 * (tone/100));
-      bResult = Math.round(bResult * (1 - tone/100) + 128 * (tone/100));
+      r = Math.round(r + (128 - r) * (tone / 100));
+      g = Math.round(g + (128 - g) * (tone / 100));
+      b = Math.round(b + (128 - b) * (tone / 100));
     }
     
     // Ensure values are within valid range
-    rResult = Math.max(0, Math.min(255, rResult));
-    gResult = Math.max(0, Math.min(255, gResult));
-    bResult = Math.max(0, Math.min(255, bResult));
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
     
-    return rgbToHexColor(rResult, gResult, bResult);
+    return rgbToHexColor(r, g, b);
   };
   
   // Update result color when inputs change
@@ -375,7 +371,7 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
     const newColor = applyTintShadeAndTone(baseColor, tintAmount, shadeAmount, toneAmount);
     setResultColor(newColor);
     onColorSelect(newColor);
-  }, [baseColor, tintAmount, shadeAmount, toneAmount]);
+  }, [baseColor, tintAmount, shadeAmount, toneAmount, onColorSelect]);
   
   // Generate palette strips
   const generateTintStrip = (color: string) => {
@@ -415,39 +411,6 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
     });
   };
 
-  // Convert HSV to Hex
-  const hsvToHex = (h: number, s: number, v: number) => {
-    h = h % 360;
-    s = s / 100;
-    v = v / 100;
-    
-    const c = v * s;
-    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-    const m = v - c;
-    
-    let r, g, b;
-    if (h < 60) {
-      [r, g, b] = [c, x, 0];
-    } else if (h < 120) {
-      [r, g, b] = [x, c, 0];
-    } else if (h < 180) {
-      [r, g, b] = [0, c, x];
-    } else if (h < 240) {
-      [r, g, b] = [0, x, c];
-    } else if (h < 300) {
-      [r, g, b] = [x, 0, c];
-    } else {
-      [r, g, b] = [c, 0, x];
-    }
-    
-    const toHex = (val: number) => {
-      const hex = Math.round((val + m) * 255).toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-    
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
-  };
-  
   const hueStrip = generateHueStrip();
   
   return (
@@ -488,7 +451,6 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
               style={{ backgroundColor: color }}
               onClick={() => {
                 onColorSelect(color);
-                setSelectedHue(i * (360 / hueStrip.length));
               }}
             />
           ))}
@@ -1030,6 +992,17 @@ const ColorTheoryTab = () => {
             </Card>
           </TabsContent>
         </Tabs>
+      </div>
+      
+      <div className="text-center mt-8 mb-4 text-xs text-muted-foreground">
+        Powered by <a 
+          href="https://aasuri.com" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-artify-pink hover:underline"
+        >
+          aasuri.com
+        </a>
       </div>
     </div>
   );
