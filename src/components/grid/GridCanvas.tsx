@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
@@ -50,6 +51,7 @@ const GridCanvas = ({
   const [imagePosition, setImagePosition] = useState<ImagePosition>({ x: 0, y: 0 });
   const [imageScale, setImageScale] = useState(1);
   const [imgElement, setImgElement] = useState<HTMLImageElement | null>(null);
+  const [fitToCanvas, setFitToCanvas] = useState(false);
   
   // Update canvas dimensions based on size and orientation
   useEffect(() => {
@@ -93,12 +95,14 @@ const GridCanvas = ({
     
     // Reset image position when canvas size changes
     setImagePosition({ x: 0, y: 0 });
+    setImageScale(1);
+    setFitToCanvas(false);
   }, [canvasSize, orientation, customWidth, customHeight, customUnit]);
 
   // Draw grid on canvas whenever relevant props change
   useEffect(() => {
     drawCanvas();
-  }, [canvasDimensions, gridSize, lineWidth, lineOpacity, showDiagonals, showGridNumbers, lineColor, image, imagePosition, imageScale]);
+  }, [canvasDimensions, gridSize, lineWidth, lineOpacity, showDiagonals, showGridNumbers, lineColor, image, imagePosition, imageScale, fitToCanvas]);
 
   // Function to draw the canvas with grid and image
   const drawCanvas = () => {
@@ -144,6 +148,16 @@ const GridCanvas = ({
     const canvasRatio = canvasDimensions.width / canvasDimensions.height;
     
     let drawWidth, drawHeight;
+    
+    if (fitToCanvas) {
+      // Fit image exactly to canvas dimensions
+      drawWidth = canvasDimensions.width;
+      drawHeight = canvasDimensions.height;
+      
+      // Draw image with exact canvas dimensions
+      ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
+      return;
+    }
     
     if (imgRatio > canvasRatio) {
       // Image is wider than canvas
@@ -272,12 +286,17 @@ const GridCanvas = ({
 
   // Handle mouse/touch events for image positioning
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!image) return;
+    if (!image || fitToCanvas) return;
     setIsDraggingImage(true);
+    
+    // Prevent default behaviors
+    if ('touches' in e) {
+      e.preventDefault();
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDraggingImage) return;
+    if (!isDraggingImage || fitToCanvas) return;
 
     let clientX: number, clientY: number;
     
@@ -285,6 +304,7 @@ const GridCanvas = ({
       // Touch event
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
+      e.preventDefault(); // Prevent scrolling while dragging
     } else {
       // Mouse event
       clientX = e.clientX;
@@ -293,9 +313,6 @@ const GridCanvas = ({
     }
     
     // Calculate movement based on event movement
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
     setImagePosition(prev => ({
       x: prev.x + (clientX - (prev.clientX || clientX)),
       y: prev.y + (clientY - (prev.clientY || clientY)),
@@ -314,6 +331,8 @@ const GridCanvas = ({
 
   // Handle pinch-to-zoom for touch devices
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!image || fitToCanvas) return;
+    
     if (e.touches.length === 2) {
       // Store the initial distance between two fingers
       const touch1 = e.touches[0];
@@ -328,12 +347,16 @@ const GridCanvas = ({
         initialPinchDistance: distance,
         initialScale: imageScale
       }));
+      
+      e.preventDefault(); // Prevent default zoom behavior
     } else {
       handleMouseDown(e);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!image || fitToCanvas) return;
+    
     if (e.touches.length === 2 && imagePosition.initialPinchDistance && imagePosition.initialScale) {
       // Calculate new distance between fingers
       const touch1 = e.touches[0];
@@ -367,6 +390,7 @@ const GridCanvas = ({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleMouseUp}
+            style={{ touchAction: 'none' }}
           />
           
           {!image && (
@@ -398,11 +422,12 @@ const GridCanvas = ({
       
       {image && (
         <div className="p-3 border-t flex justify-between items-center bg-white dark:bg-gray-800">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setImageScale(prev => Math.min(prev + 0.1, 3))}
+              disabled={fitToCanvas}
             >
               Zoom In
             </Button>
@@ -410,6 +435,7 @@ const GridCanvas = ({
               variant="outline" 
               size="sm"
               onClick={() => setImageScale(prev => Math.max(prev - 0.1, 0.5))}
+              disabled={fitToCanvas}
             >
               Zoom Out
             </Button>
@@ -419,9 +445,19 @@ const GridCanvas = ({
               onClick={() => {
                 setImagePosition({ x: 0, y: 0 });
                 setImageScale(1);
+                setFitToCanvas(false);
               }}
+              disabled={!imagePosition.x && !imagePosition.y && imageScale === 1 && !fitToCanvas}
             >
               Reset
+            </Button>
+            <Button
+              variant={fitToCanvas ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFitToCanvas(!fitToCanvas)}
+              className={fitToCanvas ? "bg-artify-pink text-white" : ""}
+            >
+              {fitToCanvas ? "Free Move" : "Fit to Canvas"}
             </Button>
           </div>
           <Button 

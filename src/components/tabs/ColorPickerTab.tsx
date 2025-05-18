@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -36,7 +35,9 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
     reader.onload = (e) => {
       if (e.target?.result) {
         setImage(e.target.result as string);
-        toast.success('Image uploaded successfully');
+        // Automatically enable eyedropper mode when image is loaded
+        setIsEyeDropperMode(true);
+        toast.success('Image uploaded successfully. Click on the image to pick colors.');
       }
     };
     reader.onerror = () => {
@@ -93,8 +94,6 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
     
     setSelectedColor(colorPreview.color);
     onColorSelect(colorPreview.color);
-    setIsEyeDropperMode(false);
-    setColorPreview(null);
     toast.success(`Color selected: ${colorPreview.color}`);
   };
   
@@ -156,7 +155,7 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
       ) : (
         <div className="relative border rounded-lg overflow-hidden bg-muted/10">
           <div className="overflow-auto max-h-[50vh] relative">
-            <div className={`relative ${isEyeDropperMode ? 'cursor-crosshair' : ''}`}>
+            <div className={`relative ${isEyeDropperMode ? 'cursor-crosshair' : ''}`} style={{ touchAction: 'none' }}>
               <canvas
                 ref={canvasRef}
                 className="max-w-full"

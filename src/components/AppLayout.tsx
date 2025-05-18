@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,6 +21,23 @@ const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
   const { logout } = useAuth();
   const isMobile = useMediaQuery("(max-width: 768px)");
+
+  // Add viewport meta control to prevent page zooming
+  useEffect(() => {
+    // Add meta viewport tag to prevent zooming
+    const metaViewport = document.createElement('meta');
+    metaViewport.name = 'viewport';
+    metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    document.head.appendChild(metaViewport);
+
+    // Add touch-action CSS to prevent default zooming
+    document.documentElement.style.touchAction = 'manipulation';
+    
+    return () => {
+      document.head.removeChild(metaViewport);
+      document.documentElement.style.touchAction = '';
+    };
+  }, []);
 
   const tabComponents = {
     grid: <GridTab />,
