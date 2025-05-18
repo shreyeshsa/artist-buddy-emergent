@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for color operations
  */
@@ -136,6 +135,47 @@ export const hslToHex = (h: number, s: number, l: number) => {
 export const hexToHsl = (hex: string) => {
   const rgb = hexToRgb(hex);
   return rgbToHsl(rgb.r, rgb.g, rgb.b);
+};
+
+// Convert HSV to RGB
+export const hsvToRgb = (h: number, s: number, v: number) => {
+  h = h % 1;
+  s = Math.max(0, Math.min(1, s));
+  v = Math.max(0, Math.min(1, v));
+  
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  
+  let r, g, b;
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+    default: r = v; g = t; b = p;
+  }
+  
+  return { 
+    r: Math.round(r * 255), 
+    g: Math.round(g * 255), 
+    b: Math.round(b * 255) 
+  };
+};
+
+// Convert HSV to Hex - add this new function
+export const hsvToHex = (h: number, s: number, v: number) => {
+  // Normalize inputs if passed as 0-360, 0-100, 0-100
+  const normalizedH = h > 1 ? h / 360 : h;
+  const normalizedS = s > 1 ? s / 100 : s;
+  const normalizedV = v > 1 ? v / 100 : v;
+  
+  const rgb = hsvToRgb(normalizedH, normalizedS, normalizedV);
+  return rgbToHex(rgb.r, rgb.g, rgb.b);
 };
 
 // Calculate color blend modes

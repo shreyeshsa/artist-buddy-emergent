@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { rgbToHexColor, hexToRgb } from "@/utils/colorUtils";
+import { rgbToHexColor, hexToRgb, hsvToHex } from "@/utils/colorUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { toast } from "sonner";
 
@@ -402,7 +402,7 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
   const shades = generateShadeStrip(baseColor);
   const tones = generateToneStrip(baseColor);
   
-  // Generate a hue strip for selecting colors
+  // Generate a hue strip for selecting colors - now using imported hsvToHex
   const generateHueStrip = () => {
     const steps = 24;
     return Array.from({ length: steps }, (_, i) => {
@@ -732,7 +732,7 @@ const HarmonyExplorer = ({ baseColor, onColorSelect }: { baseColor: string; onCo
     setHarmonyColors(colors);
   };
 
-  // Generate a hue strip for selecting colors
+  // Generate a hue strip for selecting colors - now using imported hsvToHex
   const generateHueStrip = () => {
     const steps = 24;
     return Array.from({ length: steps }, (_, i) => {
