@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -7,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { rgbToHexColor } from "@/utils/colorUtils";
+import { rgbToHexColor, hexToRgb } from "@/utils/colorUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { toast } from "sonner";
 
@@ -329,34 +328,46 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
   const [resultColor, setResultColor] = useState(baseColor);
   const [selectedHue, setSelectedHue] = useState(0);
   
-  // Calculate tints, shades, and tones
+  // Calculate tints, shades, and tones with fixed mixing logic
   const applyTintShadeAndTone = (color: string, tint: number, shade: number, tone: number) => {
     // Convert hex to RGB
-    const r = parseInt(color.substring(1, 3), 16);
-    const g = parseInt(color.substring(3, 5), 16);
-    const b = parseInt(color.substring(5, 7), 16);
+    const rgbColor = hexToRgb(color);
+    const r = rgbColor.r;
+    const g = rgbColor.g;
+    const b = rgbColor.b;
     
-    // Apply tint (add white)
-    let rTint = r + ((255 - r) * tint / 100);
-    let gTint = g + ((255 - g) * tint / 100);
-    let bTint = b + ((255 - b) * tint / 100);
+    // Apply tint (add white) - properly mix with base color
+    let rResult = r;
+    let gResult = g; 
+    let bResult = b;
     
-    // Apply shade (add black)
-    rTint = rTint * (1 - shade / 100);
-    gTint = gTint * (1 - shade / 100);
-    bTint = bTint * (1 - shade / 100);
+    // Apply tint (mix with white: 255, 255, 255)
+    if (tint > 0) {
+      rResult = Math.round(r * (1 - tint/100) + 255 * (tint/100));
+      gResult = Math.round(g * (1 - tint/100) + 255 * (tint/100));
+      bResult = Math.round(b * (1 - tint/100) + 255 * (tint/100));
+    }
     
-    // Apply tone (add gray)
-    const gray = 128;
-    rTint = rTint + ((gray - rTint) * tone / 100);
-    gTint = gTint + ((gray - gTint) * tone / 100);
-    bTint = bTint + ((gray - bTint) * tone / 100);
+    // Apply shade (mix with black: 0, 0, 0)
+    if (shade > 0) {
+      rResult = Math.round(rResult * (1 - shade/100));
+      gResult = Math.round(gResult * (1 - shade/100));
+      bResult = Math.round(bResult * (1 - shade/100));
+    }
     
-    return rgbToHexColor(
-      Math.round(Math.max(0, Math.min(255, rTint))),
-      Math.round(Math.max(0, Math.min(255, gTint))),
-      Math.round(Math.max(0, Math.min(255, bTint)))
-    );
+    // Apply tone (mix with gray: 128, 128, 128)
+    if (tone > 0) {
+      rResult = Math.round(rResult * (1 - tone/100) + 128 * (tone/100));
+      gResult = Math.round(gResult * (1 - tone/100) + 128 * (tone/100));
+      bResult = Math.round(bResult * (1 - tone/100) + 128 * (tone/100));
+    }
+    
+    // Ensure values are within valid range
+    rResult = Math.max(0, Math.min(255, rResult));
+    gResult = Math.max(0, Math.min(255, gResult));
+    bResult = Math.max(0, Math.min(255, bResult));
+    
+    return rgbToHexColor(rResult, gResult, bResult);
   };
   
   // Update result color when inputs change
@@ -790,12 +801,12 @@ const HarmonyExplorer = ({ baseColor, onColorSelect }: { baseColor: string; onCo
       <div>
         <h3 className="text-lg font-medium mb-3">Color Harmony Types</h3>
         <ScrollArea className="w-full">
-          <div className={`grid ${isMobile ? "grid-cols-2" : "grid-cols-6"} gap-2 pb-1`}>
+          <div className={`grid ${isMobile ? "grid-cols-3" : "grid-cols-6"} gap-2 pb-1`}>
             {['complementary', 'analogous', 'triadic', 'tetradic', 'split', 'monochromatic'].map((type) => (
               <Button
                 key={type}
                 variant={harmonyType === type ? "default" : "outline"}
-                className={`whitespace-nowrap ${harmonyType === type ? "bg-gradient-to-r from-artify-pink to-artify-purple" : ""}`}
+                className={`whitespace-nowrap text-xs p-1 md:text-sm md:p-2 ${harmonyType === type ? "bg-gradient-to-r from-artify-pink to-artify-purple" : ""}`}
                 onClick={() => setHarmonyType(type)}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}

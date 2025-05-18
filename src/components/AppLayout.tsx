@@ -39,11 +39,12 @@ const AppLayout = () => {
     };
   }, []);
 
-  // Remove Lovable badge from the app
+  // Remove Lovable badge from the app (including login screen)
   useEffect(() => {
     // Find and remove the Lovable badge or link
     const removeBadge = () => {
-      const badges = document.querySelectorAll('[id*="lovable"]');
+      // Target any element with 'lovable' in its id, class, or content
+      const badges = document.querySelectorAll('[id*="lovable"], [class*="lovable"]');
       badges.forEach(badge => {
         if (badge.parentNode) {
           badge.parentNode.removeChild(badge);
@@ -51,11 +52,31 @@ const AppLayout = () => {
       });
       
       // Also target elements with specific CSS classes that might be part of the badge
-      const badgeClasses = document.querySelectorAll('.fixed.bottom-2, .fixed.bottom-4, .fixed.bottom-0');
+      const badgeClasses = document.querySelectorAll('.fixed.bottom-0, .fixed.bottom-2, .fixed.bottom-4, .fixed.bottom-5');
       badgeClasses.forEach(element => {
-        if (element.innerHTML.toLowerCase().includes('lovable') || element.innerHTML.toLowerCase().includes('made with')) {
+        if (element.innerHTML && (
+            element.innerHTML.toLowerCase().includes('lovable') || 
+            element.innerHTML.toLowerCase().includes('made with') ||
+            element.innerHTML.toLowerCase().includes('powered by')
+        )) {
           if (element.parentNode) {
             element.parentNode.removeChild(element);
+          }
+        }
+      });
+      
+      // Remove elements with 'love' in the text that might be badges
+      document.querySelectorAll('a, div, span, p').forEach(el => {
+        if (el.textContent && (
+            el.textContent.toLowerCase().includes('made with') ||
+            el.textContent.toLowerCase().includes('powered by lovable')
+        )) {
+          const isFixed = 
+            window.getComputedStyle(el).position === 'fixed' || 
+            (el.parentElement && window.getComputedStyle(el.parentElement).position === 'fixed');
+          
+          if (isFixed && el.parentNode) {
+            el.parentNode.removeChild(el);
           }
         }
       });
