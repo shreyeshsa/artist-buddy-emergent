@@ -9,362 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { rgbToHexColor } from "@/utils/colorUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-
-// Color wheel component with interactive mixing
-const ColorWheel = ({
-  selectedColor,
-  onColorSelect,
-  mixingMode,
-}: {
-  selectedColor: string;
-  onColorSelect: (color: string) => void;
-  mixingMode: 'additive' | 'subtractive';
-}) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [selectedPoints, setSelectedPoints] = useState<{x: number, y: number, color: string}[]>([]);
-  const [mixedColor, setMixedColor] = useState<string | null>(null);
-  const [complementaryColor, setComplementaryColor] = useState<string | null>(null);
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  
-  // Draw color wheel
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = Math.min(centerX, centerY) - 10;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw color wheel
-    for (let angle = 0; angle < 360; angle++) {
-      const startAngle = (angle - 0.5) * Math.PI / 180;
-      const endAngle = (angle + 0.5) * Math.PI / 180;
-      
-      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-      gradient.addColorStop(0, '#FFFFFF');
-      
-      // Convert angle to HSL
-      const hue = angle;
-      const color = `hsl(${hue}, 100%, 50%)`;
-      gradient.addColorStop(1, color);
-      
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-      ctx.closePath();
-      
-      ctx.fillStyle = gradient;
-      ctx.fill();
-    }
-    
-    // Draw labels for primary and secondary colors
-    const labels = [
-      { angle: 0, text: "Red", color: "#FFE6E6" },
-      { angle: 60, text: "Yellow", color: "#333333" },
-      { angle: 120, text: "Green", color: "#E6FFE6" },
-      { angle: 180, text: "Cyan", color: "#333333" },
-      { angle: 240, text: "Blue", color: "#E6E6FF" },
-      { angle: 300, text: "Magenta", color: "#FFE6FF" },
-    ];
-    
-    ctx.font = "14px Arial";
-    ctx.textAlign = "center";
-    
-    labels.forEach(label => {
-      const angleRad = label.angle * Math.PI / 180;
-      const x = centerX + (radius + 20) * Math.cos(angleRad);
-      const y = centerY + (radius + 20) * Math.sin(angleRad);
-      
-      ctx.fillStyle = label.color;
-      ctx.fillText(label.text, x, y);
-    });
-    
-    // Draw selected points
-    selectedPoints.forEach((point, index) => {
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
-      ctx.strokeStyle = "#FFFFFF";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = point.color;
-      ctx.fill();
-      
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText((index + 1).toString(), point.x, point.y + 5);
-    });
-    
-    // Draw complementary color indicator
-    if (complementaryColor) {
-      // Find the point on the wheel that represents the complementary color
-      const hue = hexToHSL(complementaryColor).h;
-      const angleRad = hue * Math.PI / 180;
-      const compX = centerX + radius * Math.cos(angleRad);
-      const compY = centerY + radius * Math.sin(angleRad);
-      
-      ctx.beginPath();
-      ctx.arc(compX, compY, 8, 0, Math.PI * 2);
-      ctx.strokeStyle = "#FFFFFF";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = complementaryColor;
-      ctx.fill();
-      
-      // Draw a line connecting the selected color and its complement
-      if (selectedPoints.length > 0) {
-        ctx.beginPath();
-        ctx.moveTo(selectedPoints[0].x, selectedPoints[0].y);
-        ctx.lineTo(compX, compY);
-        ctx.strokeStyle = "rgba(255,255,255,0.5)";
-        ctx.setLineDash([5, 5]);
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-    }
-  }, [selectedPoints, complementaryColor]);
-  
-  // Function to handle color selection
-  const handleColorSelection = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Get color at clicked position
-    const pixelData = ctx.getImageData(x, y, 1, 1).data;
-    const color = rgbToHexColor(pixelData[0], pixelData[1], pixelData[2]);
-    
-    // Add to selected points (max 2 for mixing)
-    if (selectedPoints.length < 2) {
-      setSelectedPoints([...selectedPoints, { x, y, color }]);
-      onColorSelect(color);
-      
-      // Update complementary color
-      const hsl = hexToHSL(color);
-      const complementHue = (hsl.h + 180) % 360;
-      setComplementaryColor(`hsl(${complementHue}, ${hsl.s}%, ${hsl.l}%)`);
-      
-      // If we have 2 colors, mix them
-      if (selectedPoints.length === 1) {
-        const mixedColor = mixColors(selectedPoints[0].color, color, mixingMode);
-        setMixedColor(mixedColor);
-      }
-    } else {
-      // Reset and start with new color
-      setSelectedPoints([{ x, y, color }]);
-      onColorSelect(color);
-      
-      // Update complementary color
-      const hsl = hexToHSL(color);
-      const complementHue = (hsl.h + 180) % 360;
-      setComplementaryColor(`hsl(${complementHue}, ${hsl.s}%, ${hsl.l}%)`);
-      
-      setMixedColor(null);
-    }
-  };
-  
-  // Convert hex to HSL
-  const hexToHSL = (hex: string) => {
-    // Convert hex to RGB
-    const r = parseInt(hex.substring(1, 3), 16) / 255;
-    const g = parseInt(hex.substring(3, 5), 16) / 255;
-    const b = parseInt(hex.substring(5, 7), 16) / 255;
-    
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0;
-    let s = 0;
-    const l = (max + min) / 2;
-    
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      
-      h *= 60;
-    }
-    
-    return { h, s: s * 100, l: l * 100 };
-  };
-  
-  // Mix two colors
-  const mixColors = (color1: string, color2: string, mode: 'additive' | 'subtractive') => {
-    // Convert hex to RGB
-    const r1 = parseInt(color1.substring(1, 3), 16);
-    const g1 = parseInt(color1.substring(3, 5), 16);
-    const b1 = parseInt(color1.substring(5, 7), 16);
-    
-    const r2 = parseInt(color2.substring(1, 3), 16);
-    const g2 = parseInt(color2.substring(3, 5), 16);
-    const b2 = parseInt(color2.substring(5, 7), 16);
-    
-    let r, g, b;
-    
-    if (mode === 'additive') {
-      // Additive mixing (light)
-      r = Math.min(255, Math.round((r1 + r2) / 2));
-      g = Math.min(255, Math.round((g1 + g2) / 2));
-      b = Math.min(255, Math.round((b1 + b2) / 2));
-    } else {
-      // Subtractive mixing (pigment - more realistic)
-      const cyanRed1 = 1 - r1/255;
-      const magentaGreen1 = 1 - g1/255;
-      const yellowBlue1 = 1 - b1/255;
-      
-      const cyanRed2 = 1 - r2/255;
-      const magentaGreen2 = 1 - g2/255;
-      const yellowBlue2 = 1 - b2/255;
-      
-      const cyanRed = (cyanRed1 + cyanRed2) * 0.7; // Adjust factor for more natural mixing
-      const magentaGreen = (magentaGreen1 + magentaGreen2) * 0.7;
-      const yellowBlue = (yellowBlue1 + yellowBlue2) * 0.7;
-      
-      r = Math.round((1 - cyanRed) * 255);
-      g = Math.round((1 - magentaGreen) * 255);
-      b = Math.round((1 - yellowBlue) * 255);
-    }
-    
-    return rgbToHexColor(r, g, b);
-  };
-  
-  // Get color name from hex
-  const getColorName = (hex: string) => {
-    const hsl = hexToHSL(hex);
-    const h = hsl.h;
-    const s = hsl.s;
-    const l = hsl.l;
-    
-    // Define hue ranges
-    let name = '';
-    
-    if (s < 10) {
-      // Grayscale
-      if (l < 20) return 'Black';
-      if (l < 50) return 'Gray';
-      if (l < 90) return 'Light Gray';
-      return 'White';
-    }
-    
-    // Determine hue name
-    if (h >= 345 || h < 15) name = 'Red';
-    else if (h < 45) name = 'Orange';
-    else if (h < 75) name = 'Yellow';
-    else if (h < 105) name = 'Yellow-Green';
-    else if (h < 135) name = 'Green';
-    else if (h < 165) name = 'Blue-Green';
-    else if (h < 195) name = 'Cyan';
-    else if (h < 225) name = 'Light Blue';
-    else if (h < 255) name = 'Blue';
-    else if (h < 285) name = 'Indigo';
-    else if (h < 315) name = 'Purple';
-    else name = 'Magenta';
-    
-    // Determine modifiers
-    let modifier = '';
-    if (s < 40) modifier = 'Grayish ';
-    else if (s < 70) modifier = 'Muted ';
-    
-    // Determine brightness
-    let brightness = '';
-    if (l < 25) brightness = 'Dark ';
-    else if (l > 75) brightness = 'Light ';
-    
-    return `${brightness}${modifier}${name}`;
-  };
-  
-  const wheelSize = isMobile ? 280 : 350;
-  
-  return (
-    <div className="space-y-4">
-      <div className="relative mx-auto" style={{ width: wheelSize, height: wheelSize, touchAction: 'none' }}>
-        <canvas
-          ref={canvasRef}
-          width={wheelSize}
-          height={wheelSize}
-          className="cursor-crosshair"
-          onClick={handleColorSelection}
-        />
-      </div>
-      
-      {selectedPoints.length > 0 && (
-        <div className="flex flex-wrap gap-4 items-center justify-center">
-          {selectedPoints.map((point, index) => (
-            <div key={index} className="text-center">
-              <div 
-                className="w-12 h-12 mx-auto rounded-md border" 
-                style={{ backgroundColor: point.color }} 
-              />
-              <div className="text-xs mt-1">{point.color}</div>
-              <div className="text-xs text-muted-foreground">
-                {getColorName(point.color)}
-              </div>
-            </div>
-          ))}
-          
-          {mixedColor && (
-            <div className="text-center">
-              <div className="flex items-center justify-center">
-                <span className="mx-2">+</span>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-muted">
-                  <span>=</span>
-                </div>
-                <span className="mx-2"></span>
-              </div>
-            </div>
-          )}
-          
-          {mixedColor && (
-            <div className="text-center">
-              <div 
-                className="w-12 h-12 mx-auto rounded-md border shadow-md" 
-                style={{ backgroundColor: mixedColor }} 
-              />
-              <div className="text-xs mt-1">{mixedColor}</div>
-              <div className="text-xs text-muted-foreground">
-                {getColorName(mixedColor)}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {complementaryColor && (
-        <div className="mt-4 p-3 bg-muted/20 rounded-lg">
-          <h4 className="text-sm font-medium mb-2">Complementary Color</h4>
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-8 h-8 rounded-md border" 
-              style={{ backgroundColor: complementaryColor }} 
-            />
-            <div>
-              <div className="text-xs">{complementaryColor}</div>
-              <div className="text-xs text-muted-foreground">
-                {getColorName(complementaryColor)}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { toast } from "sonner";
 
 // HSV Slider component
 const HSVSlider = ({ onColorSelect }: { onColorSelect: (color: string) => void }) => {
@@ -682,31 +327,36 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
   const [shadeAmount, setShadeAmount] = useState(0);
   const [toneAmount, setToneAmount] = useState(0);
   const [resultColor, setResultColor] = useState(baseColor);
+  const [selectedHue, setSelectedHue] = useState(0);
   
   // Calculate tints, shades, and tones
-  const applyTintShadeAndTone = (baseColor: string, tint: number, shade: number, tone: number) => {
+  const applyTintShadeAndTone = (color: string, tint: number, shade: number, tone: number) => {
     // Convert hex to RGB
-    const r = parseInt(baseColor.substring(1, 3), 16);
-    const g = parseInt(baseColor.substring(3, 5), 16);
-    const b = parseInt(baseColor.substring(5, 7), 16);
+    const r = parseInt(color.substring(1, 3), 16);
+    const g = parseInt(color.substring(3, 5), 16);
+    const b = parseInt(color.substring(5, 7), 16);
     
     // Apply tint (add white)
-    let rTint = Math.round(r + (255 - r) * (tint / 100));
-    let gTint = Math.round(g + (255 - g) * (tint / 100));
-    let bTint = Math.round(b + (255 - b) * (tint / 100));
+    let rTint = r + ((255 - r) * tint / 100);
+    let gTint = g + ((255 - g) * tint / 100);
+    let bTint = b + ((255 - b) * tint / 100);
     
     // Apply shade (add black)
-    rTint = Math.round(rTint * (1 - shade / 100));
-    gTint = Math.round(gTint * (1 - shade / 100));
-    bTint = Math.round(bTint * (1 - shade / 100));
+    rTint = rTint * (1 - shade / 100);
+    gTint = gTint * (1 - shade / 100);
+    bTint = bTint * (1 - shade / 100);
     
     // Apply tone (add gray)
     const gray = 128;
-    rTint = Math.round(rTint + (gray - rTint) * (tone / 100));
-    gTint = Math.round(gTint + (gray - gTint) * (tone / 100));
-    bTint = Math.round(bTint + (gray - bTint) * (tone / 100));
+    rTint = rTint + ((gray - rTint) * tone / 100);
+    gTint = gTint + ((gray - gTint) * tone / 100);
+    bTint = bTint + ((gray - bTint) * tone / 100);
     
-    return rgbToHexColor(rTint, gTint, bTint);
+    return rgbToHexColor(
+      Math.round(Math.max(0, Math.min(255, rTint))),
+      Math.round(Math.max(0, Math.min(255, gTint))),
+      Math.round(Math.max(0, Math.min(255, bTint)))
+    );
   };
   
   // Update result color when inputs change
@@ -717,33 +367,77 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
   }, [baseColor, tintAmount, shadeAmount, toneAmount]);
   
   // Generate palette strips
-  const generateTintStrip = () => {
+  const generateTintStrip = (color: string) => {
     const steps = 10;
     return Array.from({ length: steps }, (_, i) => {
       const amount = i * (100 / (steps - 1));
-      return applyTintShadeAndTone(baseColor, amount, 0, 0);
+      return applyTintShadeAndTone(color, amount, 0, 0);
     });
   };
   
-  const generateShadeStrip = () => {
+  const generateShadeStrip = (color: string) => {
     const steps = 10;
     return Array.from({ length: steps }, (_, i) => {
       const amount = i * (100 / (steps - 1));
-      return applyTintShadeAndTone(baseColor, 0, amount, 0);
+      return applyTintShadeAndTone(color, 0, amount, 0);
     });
   };
   
-  const generateToneStrip = () => {
+  const generateToneStrip = (color: string) => {
     const steps = 10;
     return Array.from({ length: steps }, (_, i) => {
       const amount = i * (100 / (steps - 1));
-      return applyTintShadeAndTone(baseColor, 0, 0, amount);
+      return applyTintShadeAndTone(color, 0, 0, amount);
     });
   };
   
-  const tints = generateTintStrip();
-  const shades = generateShadeStrip();
-  const tones = generateToneStrip();
+  const tints = generateTintStrip(baseColor);
+  const shades = generateShadeStrip(baseColor);
+  const tones = generateToneStrip(baseColor);
+  
+  // Generate a hue strip for selecting colors
+  const generateHueStrip = () => {
+    const steps = 24;
+    return Array.from({ length: steps }, (_, i) => {
+      const hue = i * (360 / steps);
+      return hsvToHex(hue, 100, 100);
+    });
+  };
+
+  // Convert HSV to Hex
+  const hsvToHex = (h: number, s: number, v: number) => {
+    h = h % 360;
+    s = s / 100;
+    v = v / 100;
+    
+    const c = v * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = v - c;
+    
+    let r, g, b;
+    if (h < 60) {
+      [r, g, b] = [c, x, 0];
+    } else if (h < 120) {
+      [r, g, b] = [x, c, 0];
+    } else if (h < 180) {
+      [r, g, b] = [0, c, x];
+    } else if (h < 240) {
+      [r, g, b] = [0, x, c];
+    } else if (h < 300) {
+      [r, g, b] = [x, 0, c];
+    } else {
+      [r, g, b] = [c, 0, x];
+    }
+    
+    const toHex = (val: number) => {
+      const hex = Math.round((val + m) * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+  };
+  
+  const hueStrip = generateHueStrip();
   
   return (
     <div className="space-y-6">
@@ -769,6 +463,24 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Hue selection strip */}
+      <div className="space-y-2">
+        <Label>Select Base Color</Label>
+        <div className="h-8 flex rounded-md overflow-hidden">
+          {hueStrip.map((color, i) => (
+            <div
+              key={i}
+              className="flex-1 h-full cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: color }}
+              onClick={() => {
+                onColorSelect(color);
+                setSelectedHue(i * (360 / hueStrip.length));
+              }}
+            />
+          ))}
         </div>
       </div>
       
@@ -912,6 +624,7 @@ const TintShadeTool = ({ baseColor, onColorSelect }: { baseColor: string, onColo
 const HarmonyExplorer = ({ baseColor, onColorSelect }: { baseColor: string; onColorSelect: (color: string) => void }) => {
   const [harmonyType, setHarmonyType] = useState('complementary');
   const [harmonyColors, setHarmonyColors] = useState<string[]>([]);
+  const isMobile = useMediaQuery("(max-width: 768px)");
   
   // Calculate harmonies when base color changes
   useEffect(() => {
@@ -1045,23 +758,51 @@ const HarmonyExplorer = ({ baseColor, onColorSelect }: { baseColor: string; onCo
     
     setHarmonyColors(colors);
   };
+
+  // Generate a hue strip for selecting colors
+  const generateHueStrip = () => {
+    const steps = 24;
+    return Array.from({ length: steps }, (_, i) => {
+      const hue = i * (360 / steps);
+      return hsvToHex(hue, 100, 100);
+    });
+  };
+
+  const hueStrip = generateHueStrip();
   
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-3">Color Harmony Types</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {['complementary', 'analogous', 'triadic', 'tetradic', 'split', 'monochromatic'].map((type) => (
-            <Button
-              key={type}
-              variant={harmonyType === type ? "default" : "outline"}
-              className={harmonyType === type ? "bg-gradient-to-r from-artify-pink to-artify-purple" : ""}
-              onClick={() => setHarmonyType(type)}
-            >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </Button>
+      {/* Hue selection strip */}
+      <div className="space-y-2">
+        <Label>Select Base Color</Label>
+        <div className="h-8 flex rounded-md overflow-hidden">
+          {hueStrip.map((color, i) => (
+            <div
+              key={i}
+              className="flex-1 h-full cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: color }}
+              onClick={() => onColorSelect(color)}
+            />
           ))}
         </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-medium mb-3">Color Harmony Types</h3>
+        <ScrollArea className="w-full">
+          <div className={`grid ${isMobile ? "grid-cols-2" : "grid-cols-6"} gap-2 pb-1`}>
+            {['complementary', 'analogous', 'triadic', 'tetradic', 'split', 'monochromatic'].map((type) => (
+              <Button
+                key={type}
+                variant={harmonyType === type ? "default" : "outline"}
+                className={`whitespace-nowrap ${harmonyType === type ? "bg-gradient-to-r from-artify-pink to-artify-purple" : ""}`}
+                onClick={() => setHarmonyType(type)}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </Button>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
       
       <div className="flex flex-wrap gap-4 p-4 rounded-lg bg-muted/10 border">
@@ -1114,20 +855,6 @@ const HarmonyExplorer = ({ baseColor, onColorSelect }: { baseColor: string; onCo
           </div>
         </CardContent>
       </Card>
-      
-      <div className="flex justify-end">
-        <Button 
-          className="bg-gradient-to-r from-artify-pink to-artify-purple"
-          onClick={() => {
-            // Export as a palette
-            const colors = [baseColor, ...harmonyColors];
-            navigator.clipboard.writeText(colors.join(', '));
-            toast.success('Palette copied to clipboard');
-          }}
-        >
-          Export Palette
-        </Button>
-      </div>
     </div>
   );
 };
@@ -1218,7 +945,6 @@ const ConceptCards = () => {
 
 const ColorTheoryTab = () => {
   const [selectedColor, setSelectedColor] = useState("#EC407A");
-  const [mixingMode, setMixingMode] = useState<'additive' | 'subtractive'>('subtractive');
   const isMobile = useMediaQuery("(max-width: 768px)");
   
   return (
@@ -1227,56 +953,26 @@ const ColorTheoryTab = () => {
         <h2 className="text-2xl font-bold mb-2">Color Theory</h2>
         <p className="text-muted-foreground mb-4">Learn and experiment with color concepts and relationships</p>
         
-        <Tabs defaultValue="wheel" className="space-y-4">
+        <Tabs defaultValue="concepts" className="space-y-4">
           <ScrollArea className="w-full">
             <TabsList className="w-full flex overflow-x-auto justify-start">
-              <TabsTrigger value="wheel">Color Wheel</TabsTrigger>
+              <TabsTrigger value="concepts">Concepts</TabsTrigger>
               <TabsTrigger value="hsv">HSV Tool</TabsTrigger>
               <TabsTrigger value="tints">Tints & Shades</TabsTrigger>
               <TabsTrigger value="harmony">Harmony Explorer</TabsTrigger>
-              <TabsTrigger value="learn">Concepts</TabsTrigger>
             </TabsList>
           </ScrollArea>
           
-          <TabsContent value="wheel" className="space-y-4">
+          <TabsContent value="concepts" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Interactive Color Wheel</CardTitle>
+                <CardTitle>Color Theory Concepts</CardTitle>
                 <CardDescription>
-                  Click to select colors. Select two colors to see them mix.
+                  Learn the foundational concepts of color theory
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-end mb-2">
-                    <Label className="mr-2">Mixing Mode:</Label>
-                    <div className="flex border rounded-md overflow-hidden">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className={mixingMode === 'additive' ? "bg-muted" : ""}
-                        onClick={() => setMixingMode('additive')}
-                      >
-                        Additive (RGB)
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className={mixingMode === 'subtractive' ? "bg-muted" : ""}
-                        onClick={() => setMixingMode('subtractive')}
-                      >
-                        Subtractive (Pigment)
-                      </Button>
-                    </div>
-                  </div>
-                  <ColorWheel
-                    selectedColor={selectedColor}
-                    onColorSelect={setSelectedColor}
-                    mixingMode={mixingMode}
-                  />
-                </div>
+                <ConceptCards />
               </CardContent>
             </Card>
           </TabsContent>
@@ -1319,20 +1015,6 @@ const ColorTheoryTab = () => {
               </CardHeader>
               <CardContent>
                 <HarmonyExplorer baseColor={selectedColor} onColorSelect={setSelectedColor} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="learn" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Color Theory Concepts</CardTitle>
-                <CardDescription>
-                  Learn the foundational concepts of color theory
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ConceptCards />
               </CardContent>
             </Card>
           </TabsContent>

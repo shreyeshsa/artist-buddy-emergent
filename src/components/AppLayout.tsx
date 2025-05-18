@@ -39,6 +39,44 @@ const AppLayout = () => {
     };
   }, []);
 
+  // Remove Lovable badge from the app
+  useEffect(() => {
+    // Find and remove the Lovable badge or link
+    const removeBadge = () => {
+      const badges = document.querySelectorAll('[id*="lovable"]');
+      badges.forEach(badge => {
+        if (badge.parentNode) {
+          badge.parentNode.removeChild(badge);
+        }
+      });
+      
+      // Also target elements with specific CSS classes that might be part of the badge
+      const badgeClasses = document.querySelectorAll('.fixed.bottom-2, .fixed.bottom-4, .fixed.bottom-0');
+      badgeClasses.forEach(element => {
+        if (element.innerHTML.toLowerCase().includes('lovable') || element.innerHTML.toLowerCase().includes('made with')) {
+          if (element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+        }
+      });
+    };
+    
+    // Run once and then observe for any dynamically added elements
+    removeBadge();
+    
+    // Create a mutation observer to detect if the badge is added dynamically
+    const observer = new MutationObserver((mutations) => {
+      removeBadge();
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
   const tabComponents = {
     grid: <GridTab />,
     colorPicker: <ColorPickerTab />,

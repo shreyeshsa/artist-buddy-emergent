@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -97,16 +98,6 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
     toast.success(`Color selected: ${colorPreview.color}`);
   };
   
-  // Toggle eyedropper mode
-  const toggleEyeDropper = () => {
-    setIsEyeDropperMode(!isEyeDropperMode);
-    if (!isEyeDropperMode) {
-      toast.info('Click on the image to select a color');
-    } else {
-      setColorPreview(null);
-    }
-  };
-  
   // Input file click handler
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -155,7 +146,7 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
       ) : (
         <div className="relative border rounded-lg overflow-hidden bg-muted/10">
           <div className="overflow-auto max-h-[50vh] relative">
-            <div className={`relative ${isEyeDropperMode ? 'cursor-crosshair' : ''}`} style={{ touchAction: 'none' }}>
+            <div className="relative cursor-crosshair" style={{ touchAction: 'none' }}>
               <canvas
                 ref={canvasRef}
                 className="max-w-full"
@@ -170,11 +161,12 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
                   style={{
                     left: `${colorPreview.x + 10}px`,
                     top: `${colorPreview.y + 10}px`,
-                    transform: 'translate(-50%, -100%)'
+                    transform: 'translate(-50%, -100%)',
+                    maxWidth: '100px'
                   }}
                 >
                   <div
-                    className="w-6 h-6 rounded-full border"
+                    className="w-5 h-5 rounded-full border"
                     style={{ backgroundColor: colorPreview.color }}
                   />
                   <span className="text-xs font-mono">{colorPreview.color}</span>
@@ -185,15 +177,6 @@ const ColorPicker = ({ onColorSelect }: { onColorSelect: (color: string) => void
           
           <div className="p-3 border-t flex justify-between items-center bg-card">
             <div className="flex items-center gap-2">
-              <Button
-                variant={isEyeDropperMode ? "default" : "outline"}
-                size="sm"
-                onClick={toggleEyeDropper}
-                className={isEyeDropperMode ? "bg-artify-pink text-white" : ""}
-              >
-                <Pipette className="h-4 w-4 mr-1" />
-                {isEyeDropperMode ? "Selecting..." : "Pick Color"}
-              </Button>
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
