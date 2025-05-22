@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
@@ -263,6 +262,60 @@ const GridCanvas = ({
         const y = i * gridSize;
         ctx.fillText(i.toString(), fontSize * 1.5, y - gridSize / 2);
       }
+      
+      // Add grid size info at bottom right when grid numbers are enabled
+      const dpi = 96; // Standard screen DPI
+      const cmPerInch = 2.54;
+      
+      // Get paper dimensions in the appropriate unit
+      let paperWidth, paperHeight, unitLabel;
+      if (customUnit === "cm") {
+        paperWidth = customWidth;
+        paperHeight = customHeight;
+        unitLabel = "cm";
+      } else {
+        paperWidth = customWidth;
+        paperHeight = customHeight;
+        unitLabel = "in";
+      }
+      
+      // Get grid size in the appropriate unit
+      let gridSizeDisplay;
+      if (customUnit === "cm") {
+        gridSizeDisplay = (gridSize / (dpi / cmPerInch)).toFixed(1);
+      } else {
+        gridSizeDisplay = (gridSize / dpi).toFixed(2);
+      }
+      
+      // Format orientation information
+      const orientationText = orientation.charAt(0).toUpperCase() + orientation.slice(1);
+      
+      // Create info text
+      const infoText = `Grid: ${gridSizeDisplay}${unitLabel} | Paper: ${paperWidth}×${paperHeight}${unitLabel} (${canvasSize.toUpperCase()} ${orientationText})`;
+      
+      // Draw semi-transparent background for text
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      const padding = 8;
+      const infoFontSize = 12;
+      ctx.font = `${infoFontSize}px Arial`;
+      const textWidth = ctx.measureText(infoText).width;
+      
+      ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+      ctx.fillRect(
+        canvas.width - textWidth - padding * 2, 
+        canvas.height - infoFontSize - padding * 2,
+        textWidth + padding * 2,
+        infoFontSize + padding * 2
+      );
+      
+      // Draw text
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.fillText(
+        infoText,
+        canvas.width - padding,
+        canvas.height - padding
+      );
     }
   };
 

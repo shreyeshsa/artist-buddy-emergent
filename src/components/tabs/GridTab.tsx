@@ -114,17 +114,56 @@ const GridTab = () => {
       // Add grid size information if the option is enabled
       const includeGridInfoCheckbox = document.getElementById('include-grid-info') as HTMLInputElement;
       if (includeGridInfoCheckbox && includeGridInfoCheckbox.checked) {
-        // Set text properties
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(8, canvas.height - 30, 120, 22);
-        ctx.font = '12px sans-serif';
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        
-        // Add grid size text
-        const gridSizeText = `Grid: ${formatGridSize(gridSize)}${gridUnit}`;
-        ctx.fillText(gridSizeText, 12, canvas.height - 19);
+        // The grid info is already drawn on canvas if showGridNumbers is enabled
+        // Only add it here if showGridNumbers is disabled but includeGridInfo is checked
+        if (!showGridNumbers) {
+          // Set text properties
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+          const padding = 8;
+          const infoFontSize = 12;
+          ctx.font = `${infoFontSize}px Arial`;
+          
+          // Create info text
+          const gridSizeText = `Grid: ${formatGridSize(gridSize)}${gridUnit}`;
+          
+          // Get paper dimensions in the appropriate unit
+          let paperWidth, paperHeight, unitLabel;
+          if (customUnit === "cm") {
+            paperWidth = customWidth;
+            paperHeight = customHeight;
+            unitLabel = "cm";
+          } else {
+            paperWidth = customWidth;
+            paperHeight = customHeight;
+            unitLabel = "in";
+          }
+          
+          // Format orientation information
+          const orientationText = orientation.charAt(0).toUpperCase() + orientation.slice(1);
+          
+          // Create full info text
+          const infoText = `${gridSizeText} | Paper: ${paperWidth}×${paperHeight}${unitLabel} (${canvasSize.toUpperCase()} ${orientationText})`;
+          
+          const textWidth = ctx.measureText(infoText).width;
+          
+          // Draw background rectangle
+          ctx.fillRect(
+            tempCanvas.width - textWidth - padding * 2, 
+            tempCanvas.height - infoFontSize - padding * 2,
+            textWidth + padding * 2,
+            infoFontSize + padding * 2
+          );
+          
+          // Draw text
+          ctx.textAlign = "right";
+          ctx.textBaseline = "bottom";
+          ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+          ctx.fillText(
+            infoText,
+            tempCanvas.width - padding,
+            tempCanvas.height - padding
+          );
+        }
       }
       
       // Create filename with timestamp
