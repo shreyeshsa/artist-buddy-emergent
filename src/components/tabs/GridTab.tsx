@@ -27,6 +27,7 @@ const GridTab = () => {
   const [showDiagonals, setShowDiagonals] = useState(false);
   const [showGridNumbers, setShowGridNumbers] = useState(false);
   const [lineColor, setLineColor] = useState("#333333");
+  const [gridUnit, setGridUnit] = useState("cm");
 
   // Image handling
   const [image, setImage] = useState<string | null>(null);
@@ -35,6 +36,29 @@ const GridTab = () => {
   
   // Track which tab is active
   const [activeTab, setActiveTab] = useState("canvas");
+
+  // Format grid size for display
+  const formatGridSize = (size: number): string => {
+    if (gridUnit === "cm") {
+      const cmValue = size / CM_TO_PIXELS;
+      
+      // Format to clean values
+      if (cmValue >= 0.95 && cmValue < 1.05) return "1.0";
+      if (cmValue >= 1.45 && cmValue < 1.55) return "1.5";
+      if (cmValue >= 1.95 && cmValue < 2.05) return "2.0";
+      if (cmValue >= 2.45 && cmValue < 2.55) return "2.5";
+      if (cmValue >= 2.95 && cmValue < 3.05) return "3.0";
+      if (cmValue >= 3.45 && cmValue < 3.55) return "3.5";
+      if (cmValue >= 3.95 && cmValue < 4.05) return "4.0";
+      if (cmValue >= 4.45 && cmValue < 4.55) return "4.5";
+      
+      // Default to fixed format
+      return cmValue.toFixed(1);
+    } else {
+      const inValue = size / STANDARD_DPI;
+      return inValue.toFixed(2);
+    }
+  };
 
   // Handle image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,23 +91,105 @@ const GridTab = () => {
     setCustomUnit(unit);
   };
 
-  // Export canvas
+  // Export canvas with grid size information
   const exportCanvas = () => {
     const canvas = document.querySelector('canvas');
     if (!canvas) return;
     
     try {
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.download = `grid-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      // Create a temporary canvas to add grid size information
+      const tempCanvas = document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
+      if (!ctx) {
+        toast.error('Could not create canvas context');
+        return;
+      }
       
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Set the temp canvas size to match the original
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
       
-      toast.success('Canvas exported successfully');
+      // Draw the original canvas content
+      ctx.drawImage(canvas, 0, 0);
+      
+      // Add grid size information if the option is enabled
+      const includeGridInfoCheckbox = document.getElementById('include-grid-info') as HTMLInputElement;
+      if (includeGridInfoCheckbox && includeGridInfoCheckbox.checked) {
+        // Set text properties
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(8, canvas.height - 30, 120, 22);
+        ctx.font = '12px sans-serif';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        // Add grid size text
+        const gridSizeText = `Grid: ${formatGridSize(gridSize)}${gridUnit}`;
+        ctx.fillText(gridSizeText, 12, canvas.height - 19);
+      }
+      
+      // Create filename with timestamp
+      let filename = `grid-${Date.now()}`;
+      
+      // Convert to the proper format and trigger download
+      let mimeType = 'image/png';
+      let extension = 'png';
+      
+      const formatSelect = document.querySelector('#export-format [data-value]') as HTMLElement;
+      if (formatSelect) {
+        const format = formatSelect.getAttribute('data-value');
+        if (format === 'jpeg') {
+          mimeType = 'image/jpeg';
+          extension = 'jpg';
+        } else if (format === 'pdf') {
+          // PDF export would require additional libraries
+          mimeType = 'image/png'; // Fallback to PNG
+          extension = 'png';
+          toast.warning('PDF export not available, saving as PNG');
+        }
+      }
+      
+      // For mobile platforms, use different approaches
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // Try to use the FileSaver API for iOS/Android
+        tempCanvas.toBlob((blob) => {
+          if (!blob) {
+            toast.error('Failed to create image blob');
+            return;
+          }
+          
+          if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+            // For IE/Edge
+            window.navigator.msSaveOrOpenBlob(blob, `${filename}.${extension}`);
+          } else {
+            // For modern mobile browsers
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${filename}.${extension}`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            
+            // Clean up
+            setTimeout(() => {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }, 100);
+          }
+          
+          toast.success('Image saved to your device');
+        }, mimeType);
+      } else {
+        // Traditional download approach for desktop
+        const link = document.createElement('a');
+        link.download = `${filename}.${extension}`;
+        link.href = tempCanvas.toDataURL(mimeType);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Canvas exported successfully');
+      }
     } catch (err) {
       toast.error('Failed to export canvas');
       console.error('Export error:', err);
@@ -165,7 +271,14 @@ const GridTab = () => {
             showDiagonals={showDiagonals}
             showGridNumbers={showGridNumbers}
             lineColor={lineColor}
-            onGridSizeChange={setGridSize}
+            onGridSizeChange={(size) => {
+              setGridSize(size);
+              // Update gridUnit when grid size changes
+              const gridUnitSelect = document.querySelector('select[id^="radix-"][data-value]') as HTMLSelectElement;
+              if (gridUnitSelect) {
+                setGridUnit(gridUnitSelect.value);
+              }
+            }}
             onLineWidthChange={setLineWidth}
             onLineOpacityChange={setLineOpacity}
             onShowDiagonalsChange={setShowDiagonals}
@@ -176,7 +289,11 @@ const GridTab = () => {
         
         {/* Export Settings */}
         <TabsContent value="export" className="space-y-4 mt-4">
-          <ExportSettings onExport={exportCanvas} />
+          <ExportSettings 
+            onExport={exportCanvas}
+            gridSize={gridSize}
+            gridUnit={gridUnit}
+          />
         </TabsContent>
       </Tabs>
     </div>

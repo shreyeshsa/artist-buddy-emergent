@@ -65,10 +65,37 @@ const GridSettings = ({
     }
   };
   
+  // Format the display value for better visual representation
+  const formatDisplayValue = (value: number): string => {
+    const realValue = pixelsToUnit(value);
+    
+    // Format display values to show clean numbers
+    if (gridUnit === "cm") {
+      if (realValue >= 0.95 && realValue < 1.05) return "1.0";
+      if (realValue >= 1.45 && realValue < 1.55) return "1.5";
+      if (realValue >= 1.95 && realValue < 2.05) return "2.0";
+      if (realValue >= 2.45 && realValue < 2.55) return "2.5";
+      if (realValue >= 2.95 && realValue < 3.05) return "3.0";
+      if (realValue >= 3.45 && realValue < 3.55) return "3.5";
+      if (realValue >= 3.95 && realValue < 4.05) return "4.0";
+      if (realValue >= 4.45 && realValue < 4.55) return "4.5";
+      if (realValue >= 4.95 && realValue < 5.05) return "5.0";
+    } else {
+      // Similar formatting for inches if needed
+      if (realValue >= 0.24 && realValue < 0.26) return "0.25";
+      if (realValue >= 0.49 && realValue < 0.51) return "0.5";
+      if (realValue >= 0.99 && realValue < 1.01) return "1.0";
+      if (realValue >= 1.49 && realValue < 1.51) return "1.5";
+    }
+    
+    // Default return the actual value with 1 decimal place
+    return realValue.toFixed(1);
+  };
+  
   // Generate preset sizes based on the current unit
   const generatePresetSizes = () => {
     if (gridUnit === "cm") {
-      // 1.0cm, 1.5cm, 2.0cm, 2.5cm, 3.0cm, 3.5cm, 4.0cm, 4.5cm grid
+      // 1.0cm, 1.5cm, 2.0cm, 2.5cm, 3.0cm, 3.5cm, 4.0cm, 4.5cm, 5.0cm grid
       return [
         CM_TO_PIXELS * 1.0,  // 1.0cm
         CM_TO_PIXELS * 1.5,  // 1.5cm
@@ -77,10 +104,13 @@ const GridSettings = ({
         CM_TO_PIXELS * 3.0,  // 3.0cm
         CM_TO_PIXELS * 3.5,  // 3.5cm
         CM_TO_PIXELS * 4.0,  // 4.0cm
-        CM_TO_PIXELS * 4.5   // 4.5cm
+        CM_TO_PIXELS * 4.5,  // 4.5cm
+        CM_TO_PIXELS * 5.0,  // 5.0cm
+        CM_TO_PIXELS * 7.5,  // 7.5cm
+        CM_TO_PIXELS * 10.0  // 10.0cm
       ].map(size => Math.round(size));
     } else {
-      // 0.25in, 0.5in, 1in, 1.5in, 2in grid
+      // 0.25in, 0.5in, 1in, 1.5in, 2in, 2.5in, 3in, 3.5in, 4in grid
       return [
         INCH_TO_PIXELS * 0.25, // 1/4 inch
         INCH_TO_PIXELS * 0.5,  // 1/2 inch
@@ -89,7 +119,8 @@ const GridSettings = ({
         INCH_TO_PIXELS * 2.0,  // 2 inch
         INCH_TO_PIXELS * 2.5,  // 2.5 inch
         INCH_TO_PIXELS * 3.0,  // 3 inch
-        INCH_TO_PIXELS * 3.5   // 3.5 inch
+        INCH_TO_PIXELS * 3.5,  // 3.5 inch
+        INCH_TO_PIXELS * 4.0   // 4 inch
       ].map(size => Math.round(size));
     }
   };
@@ -104,7 +135,7 @@ const GridSettings = ({
           <Label htmlFor="grid-size">Grid Cell Size</Label>
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">
-              {pixelsToUnit(gridSize)}{gridUnit}
+              {formatDisplayValue(gridSize)}{gridUnit}
             </span>
             <Select 
               value={gridUnit} 
@@ -142,7 +173,7 @@ const GridSettings = ({
                 )}
                 onClick={() => onGridSizeChange(size)}
               >
-                {pixelsToUnit(size)} {gridUnit}
+                {formatDisplayValue(size)} {gridUnit}
               </button>
             ))}
           </div>
