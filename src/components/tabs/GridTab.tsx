@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -158,25 +157,20 @@ const GridTab = () => {
             return;
           }
           
-          if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-            // For IE/Edge
-            window.navigator.msSaveOrOpenBlob(blob, `${filename}.${extension}`);
-          } else {
-            // For modern mobile browsers
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${filename}.${extension}`;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            
-            // Clean up
-            setTimeout(() => {
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            }, 100);
-          }
+          // Use standard download approach via URL and download attribute
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${filename}.${extension}`;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }, 100);
           
           toast.success('Image saved to your device');
         }, mimeType);
