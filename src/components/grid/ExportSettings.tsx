@@ -4,7 +4,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
 import { Download, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -17,7 +16,6 @@ const ExportSettings = ({ onExport }: ExportSettingsProps) => {
   const [format, setFormat] = useState("png");
   const [quality, setQuality] = useState("high");
   const [includeGrid, setIncludeGrid] = useState(true);
-  const [customDpi, setCustomDpi] = useState("300");
   const isMobile = useMediaQuery("(max-width: 768px)");
   
   const handleShare = async () => {
@@ -64,24 +62,9 @@ const ExportSettings = ({ onExport }: ExportSettingsProps) => {
           <SelectContent>
             <SelectItem value="standard">Standard</SelectItem>
             <SelectItem value="high">High</SelectItem>
-            <SelectItem value="custom">Custom DPI</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      
-      {quality === "custom" && (
-        <div className="space-y-2">
-          <Label htmlFor="custom-dpi">Custom DPI</Label>
-          <Input 
-            id="custom-dpi" 
-            type="number" 
-            min="72" 
-            max="600" 
-            value={customDpi}
-            onChange={(e) => setCustomDpi(e.target.value)}
-          />
-        </div>
-      )}
       
       <div className="flex items-center space-x-2">
         <Switch 

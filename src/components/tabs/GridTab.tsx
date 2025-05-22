@@ -27,11 +27,14 @@ const GridTab = () => {
   const [showDiagonals, setShowDiagonals] = useState(false);
   const [showGridNumbers, setShowGridNumbers] = useState(false);
   const [lineColor, setLineColor] = useState("#333333");
-  
+
   // Image handling
   const [image, setImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Track which tab is active
+  const [activeTab, setActiveTab] = useState("canvas");
 
   // Handle image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +90,26 @@ const GridTab = () => {
     }
   };
 
+  // Determine if grid tab should be enabled
+  const isGridTabEnabled = canvasSize !== "" && orientation !== "";
+  // Determine if export tab should be enabled
+  const isExportTabEnabled = isGridTabEnabled && gridSize > 0;
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    if (value === "grid" && !isGridTabEnabled) {
+      toast.warning("Please set canvas orientation and size first");
+      return;
+    }
+    
+    if (value === "export" && !isExportTabEnabled) {
+      toast.warning("Please configure grid settings first");
+      return;
+    }
+    
+    setActiveTab(value);
+  };
+
   return (
     <div className="p-4 pb-20">
       <div className="mb-4">
@@ -111,11 +134,11 @@ const GridTab = () => {
         onUploadImage={handleImageUpload}
       />
 
-      <Tabs defaultValue="canvas" className="mb-8">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="canvas">Canvas</TabsTrigger>
-          <TabsTrigger value="grid">Grid</TabsTrigger>
-          <TabsTrigger value="export">Export</TabsTrigger>
+          <TabsTrigger value="grid" className={!isGridTabEnabled ? "opacity-50 cursor-not-allowed" : ""}>Grid</TabsTrigger>
+          <TabsTrigger value="export" className={!isExportTabEnabled ? "opacity-50 cursor-not-allowed" : ""}>Export</TabsTrigger>
         </TabsList>
         
         {/* Canvas Settings */}

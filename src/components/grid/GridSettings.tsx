@@ -68,20 +68,28 @@ const GridSettings = ({
   // Generate preset sizes based on the current unit
   const generatePresetSizes = () => {
     if (gridUnit === "cm") {
-      // 0.5cm, 1cm, 2cm, 5cm grid
+      // 1.0cm, 1.5cm, 2.0cm, 2.5cm, 3.0cm, 3.5cm, 4.0cm, 4.5cm grid
       return [
-        CM_TO_PIXELS * 0.5,  // ~19 pixels (0.5cm)
-        CM_TO_PIXELS,        // ~38 pixels (1cm)
-        CM_TO_PIXELS * 2,    // ~76 pixels (2cm)
-        CM_TO_PIXELS * 5     // ~189 pixels (5cm)
+        CM_TO_PIXELS * 1.0,  // 1.0cm
+        CM_TO_PIXELS * 1.5,  // 1.5cm
+        CM_TO_PIXELS * 2.0,  // 2.0cm
+        CM_TO_PIXELS * 2.5,  // 2.5cm
+        CM_TO_PIXELS * 3.0,  // 3.0cm
+        CM_TO_PIXELS * 3.5,  // 3.5cm
+        CM_TO_PIXELS * 4.0,  // 4.0cm
+        CM_TO_PIXELS * 4.5   // 4.5cm
       ].map(size => Math.round(size));
     } else {
-      // 0.25in, 0.5in, 1in, 2in grid
+      // 0.25in, 0.5in, 1in, 1.5in, 2in grid
       return [
-        INCH_TO_PIXELS * 0.25, // 24 pixels (1/4 inch)
-        INCH_TO_PIXELS * 0.5,  // 48 pixels (1/2 inch)
-        INCH_TO_PIXELS,        // 96 pixels (1 inch)
-        INCH_TO_PIXELS * 2     // 192 pixels (2 inches)
+        INCH_TO_PIXELS * 0.25, // 1/4 inch
+        INCH_TO_PIXELS * 0.5,  // 1/2 inch
+        INCH_TO_PIXELS * 1.0,  // 1 inch
+        INCH_TO_PIXELS * 1.5,  // 1.5 inch
+        INCH_TO_PIXELS * 2.0,  // 2 inch
+        INCH_TO_PIXELS * 2.5,  // 2.5 inch
+        INCH_TO_PIXELS * 3.0,  // 3 inch
+        INCH_TO_PIXELS * 3.5   // 3.5 inch
       ].map(size => Math.round(size));
     }
   };
