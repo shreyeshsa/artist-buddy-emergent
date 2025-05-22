@@ -3,6 +3,11 @@
  * Utility functions for canvas operations in the Grid Creator
  */
 
+// Standard DPI for print quality
+const STANDARD_DPI = 96; // Standard screen DPI
+export const CM_TO_PIXELS = STANDARD_DPI / 2.54; // Pixels per cm at standard DPI
+export const INCH_TO_PIXELS = STANDARD_DPI; // Pixels per inch at standard DPI
+
 // Draws a grid on the canvas with specified settings
 export const drawGrid = (
   ctx: CanvasRenderingContext2D,
@@ -84,7 +89,7 @@ export const drawGrid = (
   ctx.globalAlpha = 1;
 };
 
-// Calculate canvas dimensions based on size and orientation
+// Calculate canvas dimensions based on size and orientation with accurate physical measurements
 export const getCanvasDimensions = (
   canvasSize: string, 
   orientation: string,
@@ -96,29 +101,32 @@ export const getCanvasDimensions = (
   let height = 0;
   
   if (canvasSize === "custom" && customWidth && customHeight) {
-    // Convert cm or inches to pixels (approximate at 72 DPI)
-    const conversionFactor = customUnit === "cm" ? 28.35 : 72; // 1cm ≈ 28.35px, 1in = 72px at 72 DPI
+    // Convert cm or inches to pixels
+    const conversionFactor = customUnit === "cm" ? CM_TO_PIXELS : INCH_TO_PIXELS;
     width = Math.round(customWidth * conversionFactor);
     height = Math.round(customHeight * conversionFactor);
   } else {
-    // Set sizes in pixels (approximate A4, A3, A2 at 72 PPI)
-    switch (canvasSize) {
-      case 'a4':
-        width = 595;
-        height = 842;
-        break;
-      case 'a3':
-        width = 842;
-        height = 1191;
-        break;
-      case 'a2':
-        width = 1191;
-        height = 1684;
-        break;
-      default:
-        width = 595;
-        height = 842;
-    }
+    // Set sizes in pixels for standard paper sizes
+    const paperSizes = {
+      'a4': {
+        width: Math.round(21 * CM_TO_PIXELS),  // A4 width in pixels (21cm)
+        height: Math.round(29.7 * CM_TO_PIXELS) // A4 height in pixels (29.7cm)
+      },
+      'a3': {
+        width: Math.round(29.7 * CM_TO_PIXELS),  // A3 width in pixels (29.7cm)
+        height: Math.round(42 * CM_TO_PIXELS)    // A3 height in pixels (42cm)
+      },
+      'a2': {
+        width: Math.round(42 * CM_TO_PIXELS),    // A2 width in pixels (42cm)
+        height: Math.round(59.4 * CM_TO_PIXELS)  // A2 height in pixels (59.4cm)
+      }
+    };
+    
+    const defaultSize = paperSizes['a4']; // Default to A4 if size not found
+    const selectedSize = paperSizes[canvasSize as keyof typeof paperSizes] || defaultSize;
+    
+    width = selectedSize.width;
+    height = selectedSize.height;
   }
   
   // Swap dimensions for landscape

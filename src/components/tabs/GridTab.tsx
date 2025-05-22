@@ -8,6 +8,10 @@ import CanvasSettings from "@/components/grid/CanvasSettings";
 import GridSettings from "@/components/grid/GridSettings";
 import ExportSettings from "@/components/grid/ExportSettings";
 
+// Standard DPI for print quality
+const STANDARD_DPI = 96; // Standard screen DPI
+const CM_TO_PIXELS = STANDARD_DPI / 2.54; // Pixels per cm at standard DPI
+
 const GridTab = () => {
   // State for canvas settings
   const [canvasSize, setCanvasSize] = useState("a4");
@@ -16,8 +20,8 @@ const GridTab = () => {
   const [customHeight, setCustomHeight] = useState(29.7); // A4 height in cm
   const [customUnit, setCustomUnit] = useState<"cm" | "inches">("cm");
   
-  // State for grid settings
-  const [gridSize, setGridSize] = useState(28); // ~1cm
+  // State for grid settings - initialize with 1cm grid
+  const [gridSize, setGridSize] = useState(Math.round(CM_TO_PIXELS)); // ~37.8px = 1cm at 96 DPI
   const [lineWidth, setLineWidth] = useState(1);
   const [lineOpacity, setLineOpacity] = useState(50);
   const [showDiagonals, setShowDiagonals] = useState(false);

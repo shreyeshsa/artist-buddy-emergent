@@ -38,32 +38,55 @@ const GridSettings = ({
 }: GridSettingsProps) => {
   const [customGridSize, setCustomGridSize] = useState(gridSize);
   const [gridUnit, setGridUnit] = useState("cm");
-  const [presetGridSizes, setPresetGridSizes] = useState<number[]>([28, 56, 84, 112]);
+  
+  // Define standard DPI for print (300 DPI is standard for print quality)
+  const STANDARD_DPI = 96; // Standard screen DPI
+  
+  // Pixels per unit at standard DPI
+  const CM_TO_PIXELS = STANDARD_DPI / 2.54; // ~37.8 pixels per cm at 96 DPI
+  const INCH_TO_PIXELS = STANDARD_DPI; // 96 pixels per inch at 96 DPI
   
   // Update preset grid sizes when unit changes
   useEffect(() => {
-    if (gridUnit === "cm") {
-      // Grid sizes in pixels for 1cm, 2cm, 3cm, 4cm at 28px/cm
-      setPresetGridSizes([28, 56, 84, 112]);
-    } else {
-      // Grid sizes in pixels for 0.5in, 1in, 1.5in, 2in at ~72px/inch
-      setPresetGridSizes([36, 72, 108, 144]);
-    }
-  }, [gridUnit]);
+    setCustomGridSize(gridSize);
+  }, [gridSize]);
   
   const handleGridSizeChange = (value: number) => {
     setCustomGridSize(value);
     onGridSizeChange(value);
   };
 
-  // Convert pixel size to display unit
+  // Convert pixel size to display unit with better accuracy
   const pixelsToUnit = (pixels: number): number => {
     if (gridUnit === "cm") {
-      return parseFloat((pixels / 28).toFixed(1)); // 28px ≈ 1cm at 96dpi
+      return parseFloat((pixels / CM_TO_PIXELS).toFixed(2)); // Convert pixels to cm
     } else {
-      return parseFloat((pixels / 72).toFixed(1)); // 72px ≈ 1in at 96dpi
+      return parseFloat((pixels / INCH_TO_PIXELS).toFixed(2)); // Convert pixels to inches
     }
   };
+  
+  // Generate preset sizes based on the current unit
+  const generatePresetSizes = () => {
+    if (gridUnit === "cm") {
+      // 0.5cm, 1cm, 2cm, 5cm grid
+      return [
+        CM_TO_PIXELS * 0.5,  // ~19 pixels (0.5cm)
+        CM_TO_PIXELS,        // ~38 pixels (1cm)
+        CM_TO_PIXELS * 2,    // ~76 pixels (2cm)
+        CM_TO_PIXELS * 5     // ~189 pixels (5cm)
+      ].map(size => Math.round(size));
+    } else {
+      // 0.25in, 0.5in, 1in, 2in grid
+      return [
+        INCH_TO_PIXELS * 0.25, // 24 pixels (1/4 inch)
+        INCH_TO_PIXELS * 0.5,  // 48 pixels (1/2 inch)
+        INCH_TO_PIXELS,        // 96 pixels (1 inch)
+        INCH_TO_PIXELS * 2     // 192 pixels (2 inches)
+      ].map(size => Math.round(size));
+    }
+  };
+  
+  const presetGridSizes = generatePresetSizes();
 
   return (
     <div className="space-y-6">
@@ -93,9 +116,9 @@ const GridSettings = ({
         <div className="pt-2">
           <Slider
             id="grid-size"
-            min={14}
-            max={gridUnit === "cm" ? 140 : 216}
-            step={gridUnit === "cm" ? 7 : 9}
+            min={gridUnit === "cm" ? Math.round(CM_TO_PIXELS * 0.25) : Math.round(INCH_TO_PIXELS * 0.125)} // Min: 0.25cm or 1/8 inch
+            max={gridUnit === "cm" ? Math.round(CM_TO_PIXELS * 10) : Math.round(INCH_TO_PIXELS * 4)} // Max: 10cm or 4 inches
+            step={1}
             value={[gridSize]}
             onValueChange={(values) => onGridSizeChange(values[0])}
             className="mb-6"

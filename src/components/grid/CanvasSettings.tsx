@@ -92,11 +92,11 @@ const CanvasSettings = ({
     }
   };
 
-  // Paper dimensions based on DIN A standard (in mm)
+  // Paper dimensions based on ISO 216 standard (in mm, converted to cm and inches)
   const paperDimensions = {
-    a2: {cm: {width: 42.0, height: 59.4}, inches: {width: 16.5, height: 23.4}},
-    a3: {cm: {width: 29.7, height: 42.0}, inches: {width: 11.7, height: 16.5}},
-    a4: {cm: {width: 21.0, height: 29.7}, inches: {width: 8.3, height: 11.7}}
+    a2: {cm: {width: 42.0, height: 59.4}, inches: {width: 16.54, height: 23.39}},
+    a3: {cm: {width: 29.7, height: 42.0}, inches: {width: 11.69, height: 16.54}},
+    a4: {cm: {width: 21.0, height: 29.7}, inches: {width: 8.27, height: 11.69}}
   };
 
   // Update custom dimensions when paper size or orientation changes
@@ -185,7 +185,7 @@ const CanvasSettings = ({
       </div>
       
       <div className="space-y-3">
-        <Label>Dimensions ({canvasSize === "custom" ? "Custom" : paperDimensions[canvasSize as keyof typeof paperDimensions][unit].width + " × " + paperDimensions[canvasSize as keyof typeof paperDimensions][unit].height + " " + unit})</Label>
+        <Label>Dimensions ({canvasSize === "custom" ? "Custom" : paperDimensions[canvasSize as keyof typeof paperDimensions][unit].width.toFixed(2) + " × " + paperDimensions[canvasSize as keyof typeof paperDimensions][unit].height.toFixed(2) + " " + unit})</Label>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="width">Width</Label>
