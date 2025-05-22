@@ -17,6 +17,7 @@ interface GridCanvasProps {
   customHeight: number;
   customUnit: "cm" | "inches";
   onUploadImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  gridUnit?: string; // Add gridUnit prop
 }
 
 interface ImagePosition {
@@ -41,7 +42,8 @@ const GridCanvas = ({
   customWidth,
   customHeight,
   customUnit,
-  onUploadImage
+  onUploadImage,
+  gridUnit = "cm" // Default to cm if not provided
 }: GridCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -279,19 +281,23 @@ const GridCanvas = ({
         unitLabel = "in";
       }
       
-      // Get grid size in the appropriate unit
+      // Get grid size in the appropriate unit - use the gridUnit prop
       let gridSizeDisplay;
-      if (customUnit === "cm") {
+      let gridUnitLabel = gridUnit || "cm"; // Use the passed gridUnit prop
+      
+      if (gridUnitLabel === "cm") {
         gridSizeDisplay = (gridSize / (dpi / cmPerInch)).toFixed(1);
+        gridUnitLabel = "cm";
       } else {
         gridSizeDisplay = (gridSize / dpi).toFixed(2);
+        gridUnitLabel = "in";
       }
       
       // Format orientation information
       const orientationText = orientation.charAt(0).toUpperCase() + orientation.slice(1);
       
-      // Create info text
-      const infoText = `Grid: ${gridSizeDisplay}${unitLabel} | Paper: ${paperWidth}×${paperHeight}${unitLabel} (${canvasSize.toUpperCase()} ${orientationText})`;
+      // Create info text with the correct unit
+      const infoText = `Grid: ${gridSizeDisplay}${gridUnitLabel} | Paper: ${paperWidth}×${paperHeight}${unitLabel} (${canvasSize.toUpperCase()} ${orientationText})`;
       
       // Draw semi-transparent background for text
       ctx.textAlign = "right";

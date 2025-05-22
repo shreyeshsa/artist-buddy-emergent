@@ -271,6 +271,7 @@ const GridTab = () => {
         customHeight={customHeight}
         customUnit={customUnit}
         onUploadImage={handleImageUpload}
+        gridUnit={gridUnit} // Pass gridUnit to GridCanvas
       />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
