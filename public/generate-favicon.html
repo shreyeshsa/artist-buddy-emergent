@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Favicon</title>
+</head>
+<body>
+    <h2>Favicon Generator</h2>
+    <canvas id="canvas" width="180" height="180"></canvas>
+    <br><br>
+    <button onclick="download(32, 'favicon-32x32.png')">Download 32x32</button>
+    <button onclick="download(16, 'favicon-16x16.png')">Download 16x16</button>
+    <button onclick="download(180, 'apple-touch-icon.png')">Download 180x180</button>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function drawFavicon(size) {
+            canvas.width = size;
+            canvas.height = size;
+            ctx.clearRect(0, 0, size, size);
+            
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#ec4899');
+            gradient.addColorStop(1, '#8b5cf6');
+            
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = size * 0.04;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const scale = size / 64;
+            ctx.save();
+            ctx.translate(size * 0.08, size * 0.08);
+            ctx.scale(scale * 0.875, scale * 0.875);
+            
+            const path = new Path2D('M25.4 43.05a8 8 0 00-15.4 3 6 6 0 01-6.4 6 12 12 0 0022.4-6c0-1.06-.21-2.08-.59-3zm0 0a42.66 42.66 0 009.03-4.32m-13.45-.07a42.65 42.65 0 014.32-9.05m9.12 9.12a42.66 42.66 0 0012.7-12.4l10.34-15.5a3.07 3.07 0 00-4.26-4.26L37.7 16.85a42.66 42.66 0 00-12.4 12.7m9.12 9.12a18.07 18.07 0 00-9.12-9.12');
+            ctx.stroke(path);
+            ctx.restore();
+        }
+        
+        function download(size, filename) {
+            drawFavicon(size);
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+        
+        drawFavicon(180);
+    </script>
+</body>
+</html>

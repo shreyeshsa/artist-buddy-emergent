@@ -19,11 +19,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
+    const timeoutId = setTimeout(() => {
+      console.warn('Auth initialization timed out after 10 seconds');
       setLoading(false);
-    });
+    }, 10000);
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user ?? null);
+        setIsAuthenticated(!!session?.user);
+        setLoading(false);
+        clearTimeout(timeoutId);
+      })
+      .catch((error) => {
+        console.error('Failed to get session:', error);
+        setLoading(false);
+        clearTimeout(timeoutId);
+      });
 
     const {
       data: { subscription },
@@ -32,7 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(!!session?.user);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
