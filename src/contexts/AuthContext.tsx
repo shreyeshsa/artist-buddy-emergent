@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -189,33 +189,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.error("Logout failed. Please try again.");
     }
   };
-
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold mb-2">Configuration Required</h1>
-          <p className="text-muted-foreground mb-4">
-            Environment variables are not configured. Please set up VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your hosting platform.
-          </p>
-          <div className="bg-muted p-4 rounded-lg text-left text-sm">
-            <p className="font-semibold mb-2">For Netlify:</p>
-            <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-              <li>Go to Site settings → Environment variables</li>
-              <li>Add VITE_SUPABASE_URL</li>
-              <li>Add VITE_SUPABASE_ANON_KEY</li>
-              <li>Redeploy your site</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

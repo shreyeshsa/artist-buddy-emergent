@@ -1,28 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-console.log('Supabase Configuration Check:');
-console.log('URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
-console.log('Anon Key:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables!');
-  console.error('Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your hosting platform.');
-  console.error('Environment variables should be configured in your hosting platform (Netlify, Vercel, etc.)');
-  console.error('Current environment:', {
-    url: supabaseUrl ? 'SET' : 'MISSING',
-    key: supabaseAnonKey ? 'SET' : 'MISSING',
-  });
-}
-
-const placeholderUrl = 'https://placeholder.supabase.co';
-const placeholderKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDk3MjM2MDAsImV4cCI6MTk2NTA5OTYwMH0.placeholder';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJib2x0IiwicmVmIjoiMGVjOTBiNTdkNmU5NWZjYmRhMTk4MzJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODE1NzQsImV4cCI6MTc1ODg4MTU3NH0.9I8-U0x86Ak8t2DGaIk0HfvTSLsAyzdnz-Nw00mMkKw';
 
 export const supabase = createClient(
-  supabaseUrl || placeholderUrl,
-  supabaseAnonKey || placeholderKey,
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       persistSession: true,
@@ -32,8 +15,6 @@ export const supabase = createClient(
     },
   }
 );
-
-export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 export interface UserImage {
   id: string;
