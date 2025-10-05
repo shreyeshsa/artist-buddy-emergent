@@ -77,20 +77,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       console.log('Attempting login...');
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+      const apiUrl = `${supabaseUrl}/functions/v1/auth-login`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        console.error('Login error:', error);
-        toast.error(error.message || 'Login failed. Please check your credentials.');
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        console.error('Login error:', result.error);
+        toast.error(result.error || 'Login failed. Please check your credentials.');
         return false;
       }
 
-      if (data.user) {
-        console.log('Login successful:', data.user.email);
-        setUser(data.user);
+      if (result.success && result.user) {
+        console.log('Login successful:', result.user.email);
+
+        if (result.session) {
+          await supabase.auth.setSession({
+            access_token: result.session.access_token,
+            refresh_token: result.session.refresh_token,
+          });
+        }
+
+        setUser(result.user);
         setIsAuthenticated(true);
         toast.success("Login successful!");
         return true;
@@ -119,53 +136,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const signupData: any = {
-        email,
-        password,
-        options: {
-          data: {}
-        }
-      };
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+      const apiUrl = `${supabaseUrl}/functions/v1/auth-signup`;
 
-      if (phoneNumber && phoneNumber.trim()) {
-        signupData.options.data.phone_number = phoneNumber;
-      }
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, phoneNumber }),
+      });
 
-      const { data, error } = await supabase.auth.signUp(signupData);
+      const result = await response.json();
 
-      if (error) {
-        console.error('Signup error:', error);
+      if (!response.ok || result.error) {
+        console.error('Signup error:', result.error);
 
-        if (error.message.includes('already registered')) {
+        if (result.error.includes('already registered')) {
           toast.error('This email is already registered. Please login instead.');
-        } else if (error.message.includes('password')) {
+        } else if (result.error.includes('password')) {
           toast.error('Password must be at least 6 characters long.');
         } else {
-          toast.error(error.message || 'Signup failed. Please try again.');
+          toast.error(result.error || 'Signup failed. Please try again.');
         }
         return false;
       }
 
-      if (data.user) {
-        console.log('Signup successful:', data.user.email);
-
-        if (phoneNumber && phoneNumber.trim()) {
-          try {
-            const { error: profileError } = await supabase
-              .from('user_profiles')
-              .insert({
-                user_id: data.user.id,
-                phone_number: phoneNumber,
-              });
-
-            if (profileError) {
-              console.error('Error saving phone number:', profileError);
-            }
-          } catch (e) {
-            console.error('Profile creation error:', e);
-          }
-        }
-
+      if (result.success && result.user) {
+        console.log('Signup successful:', result.user.email);
         toast.success("Account created successfully! You can now login.");
         return true;
       }
