@@ -1,40 +1,36 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 import GridCanvas from "@/components/grid/GridCanvas";
 import CanvasSettings from "@/components/grid/CanvasSettings";
 import GridSettings from "@/components/grid/GridSettings";
 import ExportSettings from "@/components/grid/ExportSettings";
 
-// Standard DPI for print quality
-const STANDARD_DPI = 96; // Standard screen DPI
-const CM_TO_PIXELS = STANDARD_DPI / 2.54; // Pixels per cm at standard DPI
+const STANDARD_DPI = 96;
+const CM_TO_PIXELS = STANDARD_DPI / 2.54;
 
 const GridTab = () => {
-  // State for canvas settings
-  const [canvasSize, setCanvasSize] = useState("a4");
-  const [orientation, setOrientation] = useState("portrait");
-  const [customWidth, setCustomWidth] = useState(21); // A4 width in cm
-  const [customHeight, setCustomHeight] = useState(29.7); // A4 height in cm
-  const [customUnit, setCustomUnit] = useState<"cm" | "inches">("cm");
-  
-  // State for grid settings - initialize with 1cm grid
-  const [gridSize, setGridSize] = useState(Math.round(CM_TO_PIXELS)); // ~37.8px = 1cm at 96 DPI
-  const [lineWidth, setLineWidth] = useState(1);
-  const [lineOpacity, setLineOpacity] = useState(50);
-  const [showDiagonals, setShowDiagonals] = useState(true);
-  const [showGridNumbers, setShowGridNumbers] = useState(true);
-  const [lineColor, setLineColor] = useState("#333333");
-  const [gridUnit, setGridUnit] = useState("cm");
+  const [canvasSize, setCanvasSize] = usePersistedState("grid_canvasSize", "a4");
+  const [orientation, setOrientation] = usePersistedState("grid_orientation", "portrait");
+  const [customWidth, setCustomWidth] = usePersistedState("grid_customWidth", 21);
+  const [customHeight, setCustomHeight] = usePersistedState("grid_customHeight", 29.7);
+  const [customUnit, setCustomUnit] = usePersistedState<"cm" | "inches">("grid_customUnit", "cm");
 
-  // Image handling
-  const [image, setImage] = useState<string | null>(null);
+  const [gridSize, setGridSize] = usePersistedState("grid_gridSize", Math.round(CM_TO_PIXELS));
+  const [lineWidth, setLineWidth] = usePersistedState("grid_lineWidth", 1);
+  const [lineOpacity, setLineOpacity] = usePersistedState("grid_lineOpacity", 50);
+  const [showDiagonals, setShowDiagonals] = usePersistedState("grid_showDiagonals", true);
+  const [showGridNumbers, setShowGridNumbers] = usePersistedState("grid_showGridNumbers", true);
+  const [lineColor, setLineColor] = usePersistedState("grid_lineColor", "#333333");
+  const [gridUnit, setGridUnit] = usePersistedState("grid_gridUnit", "cm");
+
+  const [image, setImage] = usePersistedState<string | null>("grid_image", null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Track which tab is active
-  const [activeTab, setActiveTab] = useState("canvas");
+
+  const [activeTab, setActiveTab] = usePersistedState("grid_activeTab", "canvas");
 
   // Format grid size for display
   const formatGridSize = (size: number): string => {
@@ -323,10 +319,27 @@ const GridTab = () => {
         
         {/* Export Settings */}
         <TabsContent value="export" className="space-y-4 mt-4">
-          <ExportSettings 
+          <ExportSettings
             onExport={exportCanvas}
             gridSize={gridSize}
             gridUnit={gridUnit}
+            canvasData={{
+              canvasSize,
+              orientation,
+              customWidth,
+              customHeight,
+              customUnit,
+              image,
+            }}
+            gridSettings={{
+              gridSize,
+              lineWidth,
+              lineOpacity,
+              showDiagonals,
+              showGridNumbers,
+              lineColor,
+              gridUnit,
+            }}
           />
         </TabsContent>
       </Tabs>

@@ -11,13 +11,14 @@ import ColorPaletteGroup, { ColorItem } from "@/components/palette/ColorPaletteG
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { savePaletteProject } from "@/utils/databaseUtils";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const YourPaletteTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("all");
   const [selectedSet, setSelectedSet] = useState("all");
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
-  const [palettes, setPalettes] = useState<{id: string; name: string; colors: ColorItem[]}[]>([]);
+  const [palettes, setPalettes] = usePersistedState<{id: string; name: string; colors: ColorItem[]}[]>("yourPalette_palettes", []);
   const [newPaletteName, setNewPaletteName] = useState("");
   
   const toggleFavorite = (id: number) => {
@@ -218,25 +219,26 @@ const YourPaletteTab = () => {
         
         {/* Palette List */}
         {palettes.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {palettes.map(palette => (
-              <div key={palette.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-center mb-3">
+              <div key={palette.id} className="border rounded-lg p-4 bg-card shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
                   <div className="flex items-center">
                     <h4 className="font-medium text-lg">{palette.name}</h4>
                     <span className="ml-2 text-xs text-muted-foreground">
                       {palette.colors.length} colors
                     </span>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleSavePaletteToProject(palette)}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90"
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90 border-0"
                     >
                       <Save className="h-4 w-4 mr-1" />
-                      Save in Project
+                      <span className="hidden sm:inline">Save in Project</span>
+                      <span className="sm:hidden">Save</span>
                     </Button>
                     <Button
                       variant="outline"
@@ -244,14 +246,15 @@ const YourPaletteTab = () => {
                       onClick={() => handleExportPalette(palette)}
                     >
                       <Download className="h-4 w-4 mr-1" />
-                      Export
+                      <span className="hidden sm:inline">Export</span>
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleRemovePalette(palette.id)}
                     >
-                      Remove
+                      <span className="hidden sm:inline">Remove</span>
+                      <span className="sm:hidden">×</span>
                     </Button>
                   </div>
                 </div>

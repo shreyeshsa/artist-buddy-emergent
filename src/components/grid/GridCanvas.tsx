@@ -498,25 +498,17 @@ const GridCanvas = ({
             >
               Zoom Out
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => {
                 setImagePosition({ x: 0, y: 0 });
                 setImageScale(1);
                 setFitToCanvas(false);
               }}
-              disabled={!imagePosition.x && !imagePosition.y && imageScale === 1 && !fitToCanvas}
+              disabled={!imagePosition.x && !imagePosition.y && imageScale === 1}
             >
               Reset
-            </Button>
-            <Button
-              variant={fitToCanvas ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFitToCanvas(!fitToCanvas)}
-              className={fitToCanvas ? "bg-artify-pink text-white" : ""}
-            >
-              {fitToCanvas ? "Free Move" : "Fit to Canvas"}
             </Button>
           </div>
           <Button 
