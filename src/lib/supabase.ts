@@ -10,17 +10,30 @@ console.log('Anon Key:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Missing Supabase environment variables!');
   console.error('Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your hosting platform.');
-  throw new Error('Supabase environment variables are not configured. Please contact support.');
+  console.error('Environment variables should be configured in your hosting platform (Netlify, Vercel, etc.)');
+  console.error('Current environment:', {
+    url: supabaseUrl ? 'SET' : 'MISSING',
+    key: supabaseAnonKey ? 'SET' : 'MISSING',
+  });
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+const placeholderUrl = 'https://placeholder.supabase.co';
+const placeholderKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDk3MjM2MDAsImV4cCI6MTk2NTA5OTYwMH0.placeholder';
+
+export const supabase = createClient(
+  supabaseUrl || placeholderUrl,
+  supabaseAnonKey || placeholderKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    },
+  }
+);
+
+export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 export interface UserImage {
   id: string;
