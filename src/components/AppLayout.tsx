@@ -5,17 +5,19 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
-import { Grid, PenTool, Palette, BookOpen, LogOut, Droplet, Pipette } from "lucide-react";
+import { Grid, PenTool, Palette, BookOpen, LogOut, Droplet, Pipette, FolderOpen, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GridTab from "@/components/tabs/GridTab";
 import ColorPickerTab from "@/components/tabs/ColorPickerTab";
 import ColorTheoryTab from "@/components/tabs/ColorTheoryTab";
 import ColorMixerTab from "@/components/tabs/ColorMixerTab";
 import YourPaletteTab from "@/components/tabs/YourPaletteTab";
+import { ProjectsTab } from "@/components/tabs/ProjectsTab";
+import { PaletteProjectsTab } from "@/components/tabs/PaletteProjectsTab";
 import { BottomNavigation } from "./BottomNavigation";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-type TabType = "grid" | "colorPicker" | "colorTheory" | "colorMixer" | "yourPalette";
+type TabType = "grid" | "colorPicker" | "colorTheory" | "colorMixer" | "yourPalette" | "projects" | "paletteProjects";
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
@@ -104,14 +106,18 @@ const AppLayout = () => {
     colorTheory: <ColorTheoryTab />,
     colorMixer: <ColorMixerTab />,
     yourPalette: <YourPaletteTab />,
+    projects: <ProjectsTab />,
+    paletteProjects: <PaletteProjectsTab />,
   };
 
   const tabs = [
     { id: "grid", label: "Grids", icon: <Grid className="h-5 w-5" /> },
+    { id: "projects", label: "Projects", icon: <FolderOpen className="h-5 w-5" /> },
     { id: "colorPicker", label: "Color Picker", icon: <Pipette className="h-5 w-5" /> },
     { id: "colorTheory", label: "Color Theory", icon: <Palette className="h-5 w-5" /> },
     { id: "colorMixer", label: "Color Mixer", icon: <Droplet className="h-5 w-5" /> },
     { id: "yourPalette", label: "Your Palette", icon: <BookOpen className="h-5 w-5" /> },
+    { id: "paletteProjects", label: "Palette Projects", icon: <Library className="h-5 w-5" /> },
   ];
 
   return (
