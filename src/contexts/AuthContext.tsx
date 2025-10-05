@@ -52,50 +52,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Attempting login...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        toast.error(error.message);
+        console.error('Login error:', error);
+        toast.error(error.message || 'Login failed. Please check your credentials.');
         return false;
       }
 
       if (data.user) {
+        console.log('Login successful:', data.user.email);
         setUser(data.user);
         setIsAuthenticated(true);
         toast.success("Login successful!");
         return true;
       }
 
+      toast.error("Login failed. No user data returned.");
       return false;
-    } catch (error) {
-      toast.error("Login failed. Please try again.");
+    } catch (error: any) {
+      console.error('Login exception:', error);
+      toast.error(error?.message || "Login failed. Please check your internet connection.");
       return false;
     }
   };
 
   const signup = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Attempting signup...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) {
-        toast.error(error.message);
+        console.error('Signup error:', error);
+        toast.error(error.message || 'Signup failed. Please try again.');
         return false;
       }
 
       if (data.user) {
+        console.log('Signup successful:', data.user.email);
         toast.success("Account created successfully! You can now login.");
         return true;
       }
 
+      toast.error("Signup failed. No user data returned.");
       return false;
-    } catch (error) {
-      toast.error("Signup failed. Please try again.");
+    } catch (error: any) {
+      console.error('Signup exception:', error);
+      toast.error(error?.message || "Signup failed. Please check your internet connection.");
       return false;
     }
   };
