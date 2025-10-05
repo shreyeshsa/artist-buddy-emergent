@@ -7,7 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, phoneNumber?: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -19,32 +19,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.warn('Auth initialization timed out after 10 seconds');
-      setLoading(false);
-    }, 10000);
+    let mounted = true;
 
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setUser(session?.user ?? null);
-        setIsAuthenticated(!!session?.user);
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing authentication...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Session fetch error:', error);
+          toast.error('Failed to connect to authentication service. Please refresh the page.');
+        }
+
+        if (mounted) {
+          setUser(session?.user ?? null);
+          setIsAuthenticated(!!session?.user);
+          setLoading(false);
+          console.log('Auth initialized:', session?.user ? 'User logged in' : 'No user session');
+        }
+      } catch (error) {
+        console.error('Auth initialization exception:', error);
+        if (mounted) {
+          setLoading(false);
+          toast.error('Authentication service unavailable. Please check your connection.');
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('Auth initialization timed out after 5 seconds');
         setLoading(false);
-        clearTimeout(timeoutId);
-      })
-      .catch((error) => {
-        console.error('Failed to get session:', error);
-        setLoading(false);
-        clearTimeout(timeoutId);
-      });
+        toast.error('Connection timeout. Please refresh the page.');
+      }
+    }, 5000);
+
+    initializeAuth();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
+      if (mounted) {
+        console.log('Auth state changed:', _event);
+        setUser(session?.user ?? null);
+        setIsAuthenticated(!!session?.user);
+        setLoading(false);
+      }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
       clearTimeout(timeoutId);
     };
@@ -81,22 +105,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string): Promise<boolean> => {
+  const signup = async (email: string, password: string, phoneNumber?: string): Promise<boolean> => {
     try {
       console.log('Attempting signup...');
-      const { data, error } = await supabase.auth.signUp({
+
+      if (!email || !email.includes('@')) {
+        toast.error('Please enter a valid email address.');
+        return false;
+      }
+
+      if (!password || password.length < 6) {
+        toast.error('Password must be at least 6 characters long.');
+        return false;
+      }
+
+      const signupData: any = {
         email,
         password,
-      });
+        options: {
+          data: {}
+        }
+      };
+
+      if (phoneNumber && phoneNumber.trim()) {
+        signupData.options.data.phone_number = phoneNumber;
+      }
+
+      const { data, error } = await supabase.auth.signUp(signupData);
 
       if (error) {
         console.error('Signup error:', error);
-        toast.error(error.message || 'Signup failed. Please try again.');
+
+        if (error.message.includes('already registered')) {
+          toast.error('This email is already registered. Please login instead.');
+        } else if (error.message.includes('password')) {
+          toast.error('Password must be at least 6 characters long.');
+        } else {
+          toast.error(error.message || 'Signup failed. Please try again.');
+        }
         return false;
       }
 
       if (data.user) {
         console.log('Signup successful:', data.user.email);
+
+        if (phoneNumber && phoneNumber.trim()) {
+          try {
+            const { error: profileError } = await supabase
+              .from('user_profiles')
+              .insert({
+                user_id: data.user.id,
+                phone_number: phoneNumber,
+              });
+
+            if (profileError) {
+              console.error('Error saving phone number:', profileError);
+            }
+          } catch (e) {
+            console.error('Profile creation error:', e);
+          }
+        }
+
         toast.success("Account created successfully! You can now login.");
         return true;
       }

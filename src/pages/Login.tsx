@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PhoneInput } from "@/components/PhoneInput";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login, signup } = useAuth();
 
@@ -82,11 +84,12 @@ const Login = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const success = await signup(email, password);
+    const success = await signup(email, password, phoneNumber);
     setIsLoading(false);
     if (success) {
       setEmail("");
       setPassword("");
+      setPhoneNumber("");
     }
   };
 
@@ -207,6 +210,13 @@ const Login = () => {
                         Password must be at least 6 characters
                       </p>
                     </div>
+                    <PhoneInput
+                      id="signup-phone"
+                      label="Phone Number"
+                      value={phoneNumber}
+                      onChange={setPhoneNumber}
+                      required={false}
+                    />
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
