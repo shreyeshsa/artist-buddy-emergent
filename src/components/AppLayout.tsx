@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
-import { Grid, PenTool, Palette, BookOpen, LogOut, Droplet, Pipette, FolderOpen, Library } from "lucide-react";
+import { Grid2x2 as Grid, PenTool, Palette, BookOpen, LogOut, Droplet, Pipette, FolderOpen, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GridTab from "@/components/tabs/GridTab";
 import ColorPickerTab from "@/components/tabs/ColorPickerTab";
