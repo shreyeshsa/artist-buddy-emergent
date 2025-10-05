@@ -23,8 +23,8 @@ const GridTab = () => {
   const [gridSize, setGridSize] = useState(Math.round(CM_TO_PIXELS)); // ~37.8px = 1cm at 96 DPI
   const [lineWidth, setLineWidth] = useState(1);
   const [lineOpacity, setLineOpacity] = useState(50);
-  const [showDiagonals, setShowDiagonals] = useState(true);
-  const [showGridNumbers, setShowGridNumbers] = useState(true);
+  const [showDiagonals, setShowDiagonals] = useState(false);
+  const [showGridNumbers, setShowGridNumbers] = useState(false);
   const [lineColor, setLineColor] = useState("#333333");
   const [gridUnit, setGridUnit] = useState("cm");
 

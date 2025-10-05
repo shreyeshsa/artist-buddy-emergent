@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { pencilColors, PencilColorWithAccuracy } from "@/data/pencilColors";
@@ -10,7 +11,6 @@ import { toast } from "sonner";
 import ColorPaletteGroup, { ColorItem } from "@/components/palette/ColorPaletteGroup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { savePaletteProject } from "@/utils/databaseUtils";
 
 const YourPaletteTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -120,71 +120,59 @@ const YourPaletteTab = () => {
     toast.success(`Added ${pencil.name} to palette`);
   };
 
-  const handleSavePaletteToProject = async (palette: {id: string; name: string; colors: ColorItem[]}) => {
-    if (palette.colors.length === 0) {
-      toast.error("Cannot save an empty palette");
-      return;
-    }
-
-    const result = await savePaletteProject(palette.name, palette.colors);
-    if (result) {
-      toast.success(`Saved ${palette.name} to Palette Projects`);
-    }
-  };
-
   const handleExportPalette = (palette: {id: string; name: string; colors: ColorItem[]}) => {
     // Create a canvas to render the palette
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
+    
     // Set canvas size
     const colorSize = 60;
     const padding = 20;
     const spacing = 10;
     const colorsPerRow = 5;
-
+    
     const rows = Math.ceil(palette.colors.length / colorsPerRow);
     canvas.width = padding * 2 + colorsPerRow * colorSize + (colorsPerRow - 1) * spacing;
     canvas.height = padding * 3 + rows * (colorSize + spacing) + 40; // Extra height for title
-
+    
     // Fill background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    
     // Draw title
     ctx.fillStyle = '#000000';
     ctx.font = 'bold 20px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(palette.name, canvas.width / 2, padding + 20);
-
+    
     // Draw colors
     palette.colors.forEach((color, index) => {
       const row = Math.floor(index / colorsPerRow);
       const col = index % colorsPerRow;
-
+      
       const x = padding + col * (colorSize + spacing);
       const y = padding * 2 + 40 + row * (colorSize + spacing);
-
+      
       // Draw color square
       ctx.fillStyle = color.color;
       ctx.fillRect(x, y, colorSize, colorSize);
       ctx.strokeStyle = '#000000';
       ctx.strokeRect(x, y, colorSize, colorSize);
-
+      
       // Draw color info
       ctx.fillStyle = '#000000';
       ctx.font = '10px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(`${color.code}`, x + colorSize / 2, y + colorSize + 12);
     });
-
+    
     // Export as PNG
     const link = document.createElement('a');
     link.download = `${palette.name.replace(/\s+/g, '-').toLowerCase()}-palette.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-
+    
     toast.success(`Exported ${palette.name} palette as PNG`);
   };
   
@@ -229,25 +217,16 @@ const YourPaletteTab = () => {
                     </span>
                   </div>
                   <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSavePaletteToProject(palette)}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90"
-                    >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save in Project
-                    </Button>
-                    <Button
-                      variant="outline"
+                    <Button 
+                      variant="outline" 
                       size="sm"
                       onClick={() => handleExportPalette(palette)}
                     >
                       <Download className="h-4 w-4 mr-1" />
                       Export
                     </Button>
-                    <Button
-                      variant="destructive"
+                    <Button 
+                      variant="destructive" 
                       size="sm"
                       onClick={() => handleRemovePalette(palette.id)}
                     >
