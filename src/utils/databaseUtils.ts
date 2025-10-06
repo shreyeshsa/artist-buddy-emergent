@@ -1,34 +1,58 @@
-import { supabase } from "@/lib/supabase";
 import type { UserImage, Project, PaletteProject } from "@/lib/supabase";
 import { toast } from "sonner";
 
+const getCurrentUserId = (): string | null => {
+  try {
+    const stored = localStorage.getItem('artist_buddy_current_user');
+    if (!stored) return null;
+    const user = JSON.parse(stored);
+    return user?.id || null;
+  } catch {
+    return null;
+  }
+};
+
+const IMAGES_KEY = 'artist_buddy_images';
+const PROJECTS_KEY = 'artist_buddy_projects';
+const PALETTES_KEY = 'artist_buddy_palettes';
+
+const getStorageData = <T>(key: string): T[] => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const setStorageData = <T>(key: string, data: T[]) => {
+  localStorage.setItem(key, JSON.stringify(data));
+};
+
 export async function saveImageToDatabase(imageName: string, imageData: string): Promise<UserImage | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
 
-    if (!user) {
+    if (!userId) {
       toast.error("You must be logged in to save images");
       return null;
     }
 
-    const { data, error } = await supabase
-      .from("user_images")
-      .insert({
-        user_id: user.id,
-        image_name: imageName,
-        image_data: imageData,
-      })
-      .select()
-      .maybeSingle();
+    const images = getStorageData<UserImage>(IMAGES_KEY);
+    const newImage: UserImage = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      image_name: imageName,
+      image_data: imageData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    if (error) {
-      console.error("Error saving image:", error);
-      toast.error("Failed to save image");
-      return null;
-    }
+    images.push(newImage);
+    setStorageData(IMAGES_KEY, images);
 
     toast.success("Image saved successfully");
-    return data;
+    return newImage;
   } catch (error) {
     console.error("Error saving image:", error);
     toast.error("Failed to save image");
@@ -38,22 +62,13 @@ export async function saveImageToDatabase(imageName: string, imageData: string):
 
 export async function getUserImages(): Promise<UserImage[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
+    if (!userId) return [];
 
-    if (!user) return [];
-
-    const { data, error } = await supabase
-      .from("user_images")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching images:", error);
-      return [];
-    }
-
-    return data || [];
+    const images = getStorageData<UserImage>(IMAGES_KEY);
+    return images
+      .filter(img => img.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   } catch (error) {
     console.error("Error fetching images:", error);
     return [];
@@ -62,16 +77,9 @@ export async function getUserImages(): Promise<UserImage[]> {
 
 export async function deleteImage(imageId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from("user_images")
-      .delete()
-      .eq("id", imageId);
-
-    if (error) {
-      console.error("Error deleting image:", error);
-      toast.error("Failed to delete image");
-      return false;
-    }
+    const images = getStorageData<UserImage>(IMAGES_KEY);
+    const filtered = images.filter(img => img.id !== imageId);
+    setStorageData(IMAGES_KEY, filtered);
 
     toast.success("Image deleted successfully");
     return true;
@@ -84,32 +92,29 @@ export async function deleteImage(imageId: string): Promise<boolean> {
 
 export async function saveProject(projectName: string, canvasData: any, gridSettings: any): Promise<Project | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
 
-    if (!user) {
+    if (!userId) {
       toast.error("You must be logged in to save projects");
       return null;
     }
 
-    const { data, error } = await supabase
-      .from("projects")
-      .insert({
-        user_id: user.id,
-        project_name: projectName,
-        canvas_data: canvasData,
-        grid_settings: gridSettings,
-      })
-      .select()
-      .maybeSingle();
+    const projects = getStorageData<Project>(PROJECTS_KEY);
+    const newProject: Project = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      project_name: projectName,
+      canvas_data: canvasData,
+      grid_settings: gridSettings,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    if (error) {
-      console.error("Error saving project:", error);
-      toast.error("Failed to save project");
-      return null;
-    }
+    projects.push(newProject);
+    setStorageData(PROJECTS_KEY, projects);
 
     toast.success("Project saved successfully");
-    return data;
+    return newProject;
   } catch (error) {
     console.error("Error saving project:", error);
     toast.error("Failed to save project");
@@ -119,22 +124,13 @@ export async function saveProject(projectName: string, canvasData: any, gridSett
 
 export async function getUserProjects(): Promise<Project[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
+    if (!userId) return [];
 
-    if (!user) return [];
-
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching projects:", error);
-      return [];
-    }
-
-    return data || [];
+    const projects = getStorageData<Project>(PROJECTS_KEY);
+    return projects
+      .filter(proj => proj.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   } catch (error) {
     console.error("Error fetching projects:", error);
     return [];
@@ -143,16 +139,9 @@ export async function getUserProjects(): Promise<Project[]> {
 
 export async function deleteProject(projectId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", projectId);
-
-    if (error) {
-      console.error("Error deleting project:", error);
-      toast.error("Failed to delete project");
-      return false;
-    }
+    const projects = getStorageData<Project>(PROJECTS_KEY);
+    const filtered = projects.filter(proj => proj.id !== projectId);
+    setStorageData(PROJECTS_KEY, filtered);
 
     toast.success("Project deleted successfully");
     return true;
@@ -165,31 +154,28 @@ export async function deleteProject(projectId: string): Promise<boolean> {
 
 export async function savePaletteProject(paletteName: string, colors: any[]): Promise<PaletteProject | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
 
-    if (!user) {
+    if (!userId) {
       toast.error("You must be logged in to save palettes");
       return null;
     }
 
-    const { data, error } = await supabase
-      .from("palette_projects")
-      .insert({
-        user_id: user.id,
-        palette_name: paletteName,
-        colors: colors,
-      })
-      .select()
-      .maybeSingle();
+    const palettes = getStorageData<PaletteProject>(PALETTES_KEY);
+    const newPalette: PaletteProject = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      palette_name: paletteName,
+      colors: colors,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    if (error) {
-      console.error("Error saving palette:", error);
-      toast.error("Failed to save palette");
-      return null;
-    }
+    palettes.push(newPalette);
+    setStorageData(PALETTES_KEY, palettes);
 
     toast.success("Palette saved successfully");
-    return data;
+    return newPalette;
   } catch (error) {
     console.error("Error saving palette:", error);
     toast.error("Failed to save palette");
@@ -199,22 +185,13 @@ export async function savePaletteProject(paletteName: string, colors: any[]): Pr
 
 export async function getUserPaletteProjects(): Promise<PaletteProject[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
+    if (!userId) return [];
 
-    if (!user) return [];
-
-    const { data, error } = await supabase
-      .from("palette_projects")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching palette projects:", error);
-      return [];
-    }
-
-    return data || [];
+    const palettes = getStorageData<PaletteProject>(PALETTES_KEY);
+    return palettes
+      .filter(pal => pal.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   } catch (error) {
     console.error("Error fetching palette projects:", error);
     return [];
@@ -223,16 +200,9 @@ export async function getUserPaletteProjects(): Promise<PaletteProject[]> {
 
 export async function deletePaletteProject(paletteId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from("palette_projects")
-      .delete()
-      .eq("id", paletteId);
-
-    if (error) {
-      console.error("Error deleting palette:", error);
-      toast.error("Failed to delete palette");
-      return false;
-    }
+    const palettes = getStorageData<PaletteProject>(PALETTES_KEY);
+    const filtered = palettes.filter(pal => pal.id !== paletteId);
+    setStorageData(PALETTES_KEY, filtered);
 
     toast.success("Palette deleted successfully");
     return true;

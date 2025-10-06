@@ -1,7 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
-import type { User } from "@supabase/supabase-js";
+
+interface User {
+  id: string;
+  email: string;
+  created_at: string;
+  user_metadata?: {
+    phone_number?: string;
+  };
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -13,91 +20,121 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const USERS_STORAGE_KEY = 'artist_buddy_users';
+const CURRENT_USER_KEY = 'artist_buddy_current_user';
+
+interface StoredUser {
+  id: string;
+  email: string;
+  password: string;
+  created_at: string;
+  phone_number?: string;
+}
+
+const getStoredUsers = (): StoredUser[] => {
+  try {
+    const stored = localStorage.getItem(USERS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveStoredUsers = (users: StoredUser[]) => {
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+};
+
+const getCurrentUser = (): User | null => {
+  try {
+    const stored = localStorage.getItem(CURRENT_USER_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveCurrentUser = (user: User | null) => {
+  if (user) {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(CURRENT_USER_KEY);
+  }
+};
+
+const hashPassword = async (password: string): Promise<string> => {
+  const msgBuffer = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
+    const initializeAuth = () => {
+      console.log('Initializing authentication...');
+      const currentUser = getCurrentUser();
 
-    const initializeAuth = async () => {
-      try {
-        console.log('Initializing authentication...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error('Session fetch error:', error);
-        }
-
-        if (mounted) {
-          setUser(session?.user ?? null);
-          setIsAuthenticated(!!session?.user);
-          setLoading(false);
-          console.log('Auth initialized:', session?.user ? 'User logged in' : 'No user session');
-        }
-      } catch (error) {
-        console.error('Auth initialization exception:', error);
-        if (mounted) {
-          setLoading(false);
-        }
+      if (currentUser) {
+        setUser(currentUser);
+        setIsAuthenticated(true);
+        console.log('User session restored:', currentUser.email);
+      } else {
+        console.log('No user session found');
       }
+
+      setLoading(false);
     };
 
     initializeAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        console.log('Auth state changed:', _event);
-        setUser(session?.user ?? null);
-        setIsAuthenticated(!!session?.user);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('Attempting login with Supabase auth...');
+      console.log('Attempting login for:', email);
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        toast.error(error.message || 'Login failed. Please check your credentials.');
+      if (!email || !password) {
+        toast.error('Please enter both email and password.');
         return false;
       }
 
-      if (data.user && data.session) {
-        console.log('Login successful:', data.user.email);
-        setUser(data.user);
-        setIsAuthenticated(true);
-        toast.success("Login successful!");
-        return true;
+      const users = getStoredUsers();
+      const hashedPassword = await hashPassword(password);
+
+      const foundUser = users.find(u => u.email === email && u.password === hashedPassword);
+
+      if (!foundUser) {
+        toast.error('Invalid email or password.');
+        return false;
       }
 
-      toast.error("Login failed. No user data returned.");
-      return false;
+      const userSession: User = {
+        id: foundUser.id,
+        email: foundUser.email,
+        created_at: foundUser.created_at,
+        user_metadata: foundUser.phone_number ? { phone_number: foundUser.phone_number } : undefined,
+      };
+
+      setUser(userSession);
+      setIsAuthenticated(true);
+      saveCurrentUser(userSession);
+
+      console.log('Login successful:', email);
+      toast.success("Login successful!");
+      return true;
     } catch (error: any) {
       console.error('Login exception:', error);
-      toast.error(error?.message || "Login failed. Please try again.");
+      toast.error("Login failed. Please try again.");
       return false;
     }
   };
 
   const signup = async (email: string, password: string, phoneNumber?: string): Promise<boolean> => {
     try {
-      console.log('Attempting signup with Supabase auth...');
+      console.log('Attempting signup for:', email);
 
       if (!email || !email.includes('@')) {
         toast.error('Please enter a valid email address.');
@@ -109,69 +146,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const signupOptions: any = {
-        email,
-        password,
-        options: {
-          data: {}
-        }
-      };
+      const users = getStoredUsers();
 
-      if (phoneNumber && phoneNumber.trim()) {
-        signupOptions.options.data.phone_number = phoneNumber;
-      }
-
-      const { data, error } = await supabase.auth.signUp(signupOptions);
-
-      if (error) {
-        console.error('Signup error:', error);
-
-        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
-          toast.error('This email is already registered. Please login instead.');
-        } else {
-          toast.error(error.message || 'Signup failed. Please try again.');
-        }
+      const existingUser = users.find(u => u.email === email);
+      if (existingUser) {
+        toast.error('This email is already registered. Please login instead.');
         return false;
       }
 
-      if (data.user) {
-        console.log('Signup successful:', data.user.email);
+      const hashedPassword = await hashPassword(password);
 
-        if (phoneNumber && phoneNumber.trim()) {
-          try {
-            const { error: profileError } = await supabase
-              .from('user_profiles')
-              .insert({
-                user_id: data.user.id,
-                phone_number: phoneNumber,
-              });
+      const newUser: StoredUser = {
+        id: crypto.randomUUID(),
+        email,
+        password: hashedPassword,
+        created_at: new Date().toISOString(),
+        phone_number: phoneNumber,
+      };
 
-            if (profileError) {
-              console.error('Error saving phone number:', profileError);
-            }
-          } catch (profileException) {
-            console.error('Profile creation exception:', profileException);
-          }
-        }
+      users.push(newUser);
+      saveStoredUsers(users);
 
-        toast.success("Account created successfully! You can now login.");
-        return true;
-      }
-
-      toast.error("Signup failed. No user data returned.");
-      return false;
+      console.log('Signup successful:', email);
+      toast.success("Account created successfully! You can now login.");
+      return true;
     } catch (error: any) {
       console.error('Signup exception:', error);
-      toast.error(error?.message || "Signup failed. Please try again.");
+      toast.error("Signup failed. Please try again.");
       return false;
     }
   };
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
       setUser(null);
       setIsAuthenticated(false);
+      saveCurrentUser(null);
+      console.log('User logged out');
       toast.info("Logged out successfully");
     } catch (error) {
       toast.error("Logout failed. Please try again.");
