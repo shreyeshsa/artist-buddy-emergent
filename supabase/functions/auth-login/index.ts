@@ -10,14 +10,14 @@ const corsHeaders = {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
-      status: 204,
+      status: 200,
       headers: corsHeaders,
     });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing environment variables');
@@ -30,12 +30,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     let email: string;
     let password: string;
@@ -65,6 +60,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log('Attempting login for email:', email);
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -91,6 +88,8 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    console.log('Login successful for user:', data.user.id);
 
     return new Response(
       JSON.stringify({

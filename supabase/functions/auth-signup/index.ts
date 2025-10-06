@@ -10,14 +10,14 @@ const corsHeaders = {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
-      status: 204,
+      status: 200,
       headers: corsHeaders,
     });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing environment variables:', {
@@ -117,6 +117,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log('User created successfully:', data.user.id);
+
     if (phoneNumber && phoneNumber.trim()) {
       try {
         console.log('Saving phone number for user:', data.user.id);
@@ -129,6 +131,8 @@ Deno.serve(async (req: Request) => {
 
         if (profileError) {
           console.error('Error saving phone number:', profileError);
+        } else {
+          console.log('Phone number saved successfully');
         }
       } catch (profileException) {
         console.error('Profile creation exception:', profileException);
