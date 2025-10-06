@@ -10,15 +10,29 @@ const corsHeaders = {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
-      status: 200,
+      status: 204,
       headers: corsHeaders,
     });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing environment variables:', {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey
+      });
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error. Please contact support.' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -26,7 +40,25 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    const { email, password, phoneNumber } = await req.json();
+    let email: string;
+    let password: string;
+    let phoneNumber: string | undefined;
+
+    try {
+      const body = await req.json();
+      email = body.email;
+      password = body.password;
+      phoneNumber = body.phoneNumber;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format.' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     if (!email || !email.includes('@')) {
       return new Response(
@@ -59,6 +91,8 @@ Deno.serve(async (req: Request) => {
       signupData.user_metadata.phone_number = phoneNumber;
     }
 
+    console.log('Creating user with email:', email);
+
     const { data, error } = await supabaseAdmin.auth.admin.createUser(signupData);
 
     if (error) {
@@ -72,8 +106,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (data.user && phoneNumber && phoneNumber.trim()) {
+    if (!data.user) {
+      console.error('User creation succeeded but no user data returned');
+      return new Response(
+        JSON.stringify({ error: 'User creation failed. Please try again.' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (phoneNumber && phoneNumber.trim()) {
       try {
+        console.log('Saving phone number for user:', data.user.id);
         const { error: profileError } = await supabaseAdmin
           .from('user_profiles')
           .insert({
@@ -84,8 +130,8 @@ Deno.serve(async (req: Request) => {
         if (profileError) {
           console.error('Error saving phone number:', profileError);
         }
-      } catch (e) {
-        console.error('Profile creation error:', e);
+      } catch (profileException) {
+        console.error('Profile creation exception:', profileException);
       }
     }
 
@@ -97,9 +143,11 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error: any) {
-    console.error('Exception:', error);
+    console.error('Unexpected exception in auth-signup:', error);
     return new Response(
-      JSON.stringify({ error: error?.message || 'Signup failed. Please check your internet connection.' }),
+      JSON.stringify({
+        error: error?.message || 'Signup failed. Please check your internet connection and try again.'
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
