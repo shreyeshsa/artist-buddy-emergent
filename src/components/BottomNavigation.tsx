@@ -1,5 +1,5 @@
 
-import { Grid, PenTool, Palette, BookOpen, Droplet } from "lucide-react";
+import { Grid2x2 as Grid, PenTool, Palette, BookOpen, Droplet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TabItem {
