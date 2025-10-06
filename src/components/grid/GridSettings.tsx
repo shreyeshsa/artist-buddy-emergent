@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -14,12 +13,15 @@ interface GridSettingsProps {
   showDiagonals: boolean;
   showGridNumbers: boolean;
   lineColor: string;
+  gridUnit: string;
   onGridSizeChange: (size: number) => void;
   onLineWidthChange: (width: number) => void;
   onLineOpacityChange: (opacity: number) => void;
   onShowDiagonalsChange: (show: boolean) => void;
   onShowGridNumbersChange: (show: boolean) => void;
   onLineColorChange: (color: string) => void;
+  onGridUnitChange: (unit: string) => void;
+  formatGridSize: (size: number) => string;
 }
 
 const GridSettings = ({
@@ -29,117 +31,64 @@ const GridSettings = ({
   showDiagonals,
   showGridNumbers,
   lineColor,
+  gridUnit,
   onGridSizeChange,
   onLineWidthChange,
   onLineOpacityChange,
   onShowDiagonalsChange,
   onShowGridNumbersChange,
-  onLineColorChange
+  onLineColorChange,
+  onGridUnitChange,
+  formatGridSize
 }: GridSettingsProps) => {
-  const [customGridSize, setCustomGridSize] = useState(gridSize);
-  const [gridUnit, setGridUnit] = useState("cm");
-  
-  // Define standard DPI for print (300 DPI is standard for print quality)
-  const STANDARD_DPI = 96; // Standard screen DPI
-  
-  // Pixels per unit at standard DPI
-  const CM_TO_PIXELS = STANDARD_DPI / 2.54; // ~37.8 pixels per cm at 96 DPI
-  const INCH_TO_PIXELS = STANDARD_DPI; // 96 pixels per inch at 96 DPI
-  
-  // Update preset grid sizes when unit changes
-  useEffect(() => {
-    setCustomGridSize(gridSize);
-  }, [gridSize]);
-  
-  const handleGridSizeChange = (value: number) => {
-    setCustomGridSize(value);
-    onGridSizeChange(value);
-  };
+  const STANDARD_DPI = 96;
+  const CM_TO_PIXELS = STANDARD_DPI / 2.54;
+  const INCH_TO_PIXELS = STANDARD_DPI;
 
-  // Convert pixel size to display unit with better accuracy
-  const pixelsToUnit = (pixels: number): number => {
-    if (gridUnit === "cm") {
-      return parseFloat((pixels / CM_TO_PIXELS).toFixed(2)); // Convert pixels to cm
-    } else {
-      return parseFloat((pixels / INCH_TO_PIXELS).toFixed(2)); // Convert pixels to inches
-    }
-  };
-  
-  // Format the display value for better visual representation
-  const formatDisplayValue = (value: number): string => {
-    const realValue = pixelsToUnit(value);
-    
-    // Format display values to show clean numbers
-    if (gridUnit === "cm") {
-      if (realValue >= 0.95 && realValue < 1.05) return "1.0";
-      if (realValue >= 1.45 && realValue < 1.55) return "1.5";
-      if (realValue >= 1.95 && realValue < 2.05) return "2.0";
-      if (realValue >= 2.45 && realValue < 2.55) return "2.5";
-      if (realValue >= 2.95 && realValue < 3.05) return "3.0";
-      if (realValue >= 3.45 && realValue < 3.55) return "3.5";
-      if (realValue >= 3.95 && realValue < 4.05) return "4.0";
-      if (realValue >= 4.45 && realValue < 4.55) return "4.5";
-      if (realValue >= 4.95 && realValue < 5.05) return "5.0";
-    } else {
-      // Similar formatting for inches if needed
-      if (realValue >= 0.24 && realValue < 0.26) return "0.25";
-      if (realValue >= 0.49 && realValue < 0.51) return "0.5";
-      if (realValue >= 0.99 && realValue < 1.01) return "1.0";
-      if (realValue >= 1.49 && realValue < 1.51) return "1.5";
-    }
-    
-    // Default return the actual value with 1 decimal place
-    return realValue.toFixed(1);
-  };
-  
-  // Generate preset sizes based on the current unit
   const generatePresetSizes = () => {
     if (gridUnit === "cm") {
-      // 1.0cm, 1.5cm, 2.0cm, 2.5cm, 3.0cm, 3.5cm, 4.0cm, 4.5cm, 5.0cm grid
       return [
-        CM_TO_PIXELS * 1.0,  // 1.0cm
-        CM_TO_PIXELS * 1.5,  // 1.5cm
-        CM_TO_PIXELS * 2.0,  // 2.0cm
-        CM_TO_PIXELS * 2.5,  // 2.5cm
-        CM_TO_PIXELS * 3.0,  // 3.0cm
-        CM_TO_PIXELS * 3.5,  // 3.5cm
-        CM_TO_PIXELS * 4.0,  // 4.0cm
-        CM_TO_PIXELS * 4.5,  // 4.5cm
-        CM_TO_PIXELS * 5.0,  // 5.0cm
-        CM_TO_PIXELS * 7.5,  // 7.5cm
-        CM_TO_PIXELS * 10.0  // 10.0cm
+        CM_TO_PIXELS * 1.0,
+        CM_TO_PIXELS * 1.5,
+        CM_TO_PIXELS * 2.0,
+        CM_TO_PIXELS * 2.5,
+        CM_TO_PIXELS * 3.0,
+        CM_TO_PIXELS * 3.5,
+        CM_TO_PIXELS * 4.0,
+        CM_TO_PIXELS * 4.5,
+        CM_TO_PIXELS * 5.0,
+        CM_TO_PIXELS * 7.5,
+        CM_TO_PIXELS * 10.0
       ].map(size => Math.round(size));
     } else {
-      // 0.25in, 0.5in, 1in, 1.5in, 2in, 2.5in, 3in, 3.5in, 4in grid
       return [
-        INCH_TO_PIXELS * 0.25, // 1/4 inch
-        INCH_TO_PIXELS * 0.5,  // 1/2 inch
-        INCH_TO_PIXELS * 1.0,  // 1 inch
-        INCH_TO_PIXELS * 1.5,  // 1.5 inch
-        INCH_TO_PIXELS * 2.0,  // 2 inch
-        INCH_TO_PIXELS * 2.5,  // 2.5 inch
-        INCH_TO_PIXELS * 3.0,  // 3 inch
-        INCH_TO_PIXELS * 3.5,  // 3.5 inch
-        INCH_TO_PIXELS * 4.0   // 4 inch
+        INCH_TO_PIXELS * 0.25,
+        INCH_TO_PIXELS * 0.5,
+        INCH_TO_PIXELS * 1.0,
+        INCH_TO_PIXELS * 1.5,
+        INCH_TO_PIXELS * 2.0,
+        INCH_TO_PIXELS * 2.5,
+        INCH_TO_PIXELS * 3.0,
+        INCH_TO_PIXELS * 3.5,
+        INCH_TO_PIXELS * 4.0
       ].map(size => Math.round(size));
     }
   };
-  
+
   const presetGridSizes = generatePresetSizes();
 
   return (
     <div className="space-y-6">
-      {/* Grid Size */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <Label htmlFor="grid-size">Grid Cell Size</Label>
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">
-              {formatDisplayValue(gridSize)}{gridUnit}
+              {formatGridSize(gridSize)}{gridUnit}
             </span>
-            <Select 
-              value={gridUnit} 
-              onValueChange={setGridUnit}
+            <Select
+              value={gridUnit}
+              onValueChange={onGridUnitChange}
             >
               <SelectTrigger className="w-16 h-7">
                 <SelectValue placeholder="Unit" />
@@ -151,36 +100,35 @@ const GridSettings = ({
             </Select>
           </div>
         </div>
-        
+
         <div className="pt-2">
           <Slider
             id="grid-size"
-            min={gridUnit === "cm" ? Math.round(CM_TO_PIXELS * 0.25) : Math.round(INCH_TO_PIXELS * 0.125)} // Min: 0.25cm or 1/8 inch
-            max={gridUnit === "cm" ? Math.round(CM_TO_PIXELS * 10) : Math.round(INCH_TO_PIXELS * 4)} // Max: 10cm or 4 inches
+            min={gridUnit === "cm" ? Math.round(CM_TO_PIXELS * 0.25) : Math.round(INCH_TO_PIXELS * 0.125)}
+            max={gridUnit === "cm" ? Math.round(CM_TO_PIXELS * 10) : Math.round(INCH_TO_PIXELS * 4)}
             step={1}
             value={[gridSize]}
             onValueChange={(values) => onGridSizeChange(values[0])}
             className="mb-6"
           />
-          
+
           <div className="flex flex-wrap gap-2 mt-2">
             {presetGridSizes.map((size, index) => (
               <button
                 key={index}
                 className={cn(
-                  "px-3 py-1 border rounded-md text-xs",
-                  gridSize === size ? "bg-primary text-primary-foreground" : "bg-card"
+                  "px-3 py-1 border rounded-md text-xs transition-colors",
+                  Math.abs(gridSize - size) < 2 ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent"
                 )}
                 onClick={() => onGridSizeChange(size)}
               >
-                {formatDisplayValue(size)} {gridUnit}
+                {formatGridSize(size)} {gridUnit}
               </button>
             ))}
           </div>
         </div>
       </div>
-      
-      {/* Line Width */}
+
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <Label htmlFor="line-width">Line Width</Label>
@@ -195,8 +143,7 @@ const GridSettings = ({
           onValueChange={(values) => onLineWidthChange(values[0])}
         />
       </div>
-      
-      {/* Line Opacity */}
+
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <Label htmlFor="line-opacity">Line Opacity</Label>
@@ -211,12 +158,11 @@ const GridSettings = ({
           onValueChange={(values) => onLineOpacityChange(values[0])}
         />
       </div>
-      
-      {/* Line Color */}
+
       <div className="space-y-2">
         <Label htmlFor="line-color">Line Color</Label>
         <div className="flex space-x-2">
-          <div 
+          <div
             className="w-8 h-8 rounded-md border"
             style={{ backgroundColor: lineColor }}
           />
@@ -229,22 +175,20 @@ const GridSettings = ({
           />
         </div>
       </div>
-      
-      {/* Show Diagonals */}
+
       <div className="flex items-center justify-between space-x-2">
         <Label htmlFor="show-diagonals">Show Diagonals</Label>
-        <Switch 
-          id="show-diagonals" 
+        <Switch
+          id="show-diagonals"
           checked={showDiagonals}
           onCheckedChange={onShowDiagonalsChange}
         />
       </div>
-      
-      {/* Show Grid Numbers */}
+
       <div className="flex items-center justify-between space-x-2">
         <Label htmlFor="show-grid-numbers">Show Grid Numbers</Label>
-        <Switch 
-          id="show-grid-numbers" 
+        <Switch
+          id="show-grid-numbers"
           checked={showGridNumbers}
           onCheckedChange={onShowGridNumbersChange}
         />

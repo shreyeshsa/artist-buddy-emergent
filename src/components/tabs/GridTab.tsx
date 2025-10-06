@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Settings, Upload } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePersistedState } from "@/hooks/usePersistedState";
@@ -173,7 +173,7 @@ const GridTab = () => {
   };
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full flex flex-col">
       <input
         type="file"
         ref={fileInputRef}
@@ -182,197 +182,175 @@ const GridTab = () => {
         onChange={handleImageUpload}
       />
 
-      {!image ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] px-4">
-          <div className="text-center space-y-4 max-w-md">
-            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-artify-pink to-artify-purple rounded-full flex items-center justify-center">
-              <Upload className="w-12 h-12 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold">Start Creating</h3>
-            <p className="text-muted-foreground">
-              Upload an image to add a reference grid overlay
-            </p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              size="lg"
-              className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90 shadow-lg"
-            >
-              <Upload className="w-5 h-5 mr-2" />
-              Upload Image
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b p-3 flex justify-between items-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setImage(null);
-                toast.info('Canvas cleared');
-              }}
-            >
-              Clear Canvas
-            </Button>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4">
+          <GridCanvas
+            ref={canvasRef}
+            image={image}
+            canvasSize={canvasSize}
+            orientation={orientation}
+            customWidth={customWidth}
+            customHeight={customHeight}
+            customUnit={customUnit}
+            gridSize={gridSize}
+            lineWidth={lineWidth}
+            lineOpacity={lineOpacity}
+            showDiagonals={showDiagonals}
+            showGridNumbers={showGridNumbers}
+            lineColor={lineColor}
+            gridUnit={gridUnit}
+            formatGridSize={formatGridSize}
+          />
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="w-4 h-4 mr-1" />
-                Change Image
-              </Button>
-
-              {isMobile ? (
-                <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
-                  <DrawerTrigger asChild>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
-                    >
-                      <Settings className="w-4 h-4 mr-1" />
-                      Settings
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent className="max-h-[85vh]">
-                    <DrawerHeader>
-                      <DrawerTitle>Grid Settings</DrawerTitle>
-                    </DrawerHeader>
-                    <div className="px-4 pb-8 overflow-y-auto">
-                      <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
-                        <TabsList className="grid w-full grid-cols-3 mb-4">
-                          <TabsTrigger value="canvas">Canvas</TabsTrigger>
-                          <TabsTrigger value="grid">Grid</TabsTrigger>
-                          <TabsTrigger value="export">Export</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="canvas" className="space-y-4">
-                          <CanvasSettings
-                            canvasSize={canvasSize}
-                            setCanvasSize={setCanvasSize}
-                            orientation={orientation}
-                            setOrientation={setOrientation}
-                            customWidth={customWidth}
-                            customHeight={customHeight}
-                            customUnit={customUnit}
-                            onCustomDimensionsChange={handleCustomDimensionsChange}
-                          />
-                        </TabsContent>
-
-                        <TabsContent value="grid" className="space-y-4">
-                          <GridSettings
-                            gridSize={gridSize}
-                            setGridSize={setGridSize}
-                            lineWidth={lineWidth}
-                            setLineWidth={setLineWidth}
-                            lineOpacity={lineOpacity}
-                            setLineOpacity={setLineOpacity}
-                            showDiagonals={showDiagonals}
-                            setShowDiagonals={setShowDiagonals}
-                            showGridNumbers={showGridNumbers}
-                            setShowGridNumbers={setShowGridNumbers}
-                            lineColor={lineColor}
-                            setLineColor={setLineColor}
-                            gridUnit={gridUnit}
-                            setGridUnit={setGridUnit}
-                            formatGridSize={formatGridSize}
-                          />
-                        </TabsContent>
-
-                        <TabsContent value="export" className="space-y-4">
-                          <ExportSettings onExport={exportCanvas} />
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-                  </DrawerContent>
-                </Drawer>
-              ) : (
+          {!isMobile && (
+            <div className="mt-6 max-w-4xl mx-auto space-y-4">
+              <div className="flex gap-3 justify-center">
                 <Button
-                  variant="default"
-                  size="sm"
+                  variant="outline"
                   onClick={exportCanvas}
-                  className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
+                  className="flex-1 max-w-xs"
                 >
-                  Export
+                  Export Image
                 </Button>
-              )}
+              </div>
+
+              <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="canvas">Canvas Settings</TabsTrigger>
+                  <TabsTrigger value="grid">Grid Settings</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="canvas" className="space-y-4">
+                  <CanvasSettings
+                    canvasSize={canvasSize}
+                    orientation={orientation}
+                    customWidth={customWidth}
+                    customHeight={customHeight}
+                    customUnit={customUnit}
+                    onCanvasSizeChange={setCanvasSize}
+                    onOrientationChange={setOrientation}
+                    onCustomDimensionsChange={handleCustomDimensionsChange}
+                    onImportClick={() => fileInputRef.current?.click()}
+                  />
+                </TabsContent>
+
+                <TabsContent value="grid" className="space-y-4">
+                  <GridSettings
+                    gridSize={gridSize}
+                    lineWidth={lineWidth}
+                    lineOpacity={lineOpacity}
+                    showDiagonals={showDiagonals}
+                    showGridNumbers={showGridNumbers}
+                    lineColor={lineColor}
+                    gridUnit={gridUnit}
+                    onGridSizeChange={setGridSize}
+                    onLineWidthChange={setLineWidth}
+                    onLineOpacityChange={setLineOpacity}
+                    onShowDiagonalsChange={setShowDiagonals}
+                    onShowGridNumbersChange={setShowGridNumbers}
+                    onLineColorChange={setLineColor}
+                    onGridUnitChange={setGridUnit}
+                    formatGridSize={formatGridSize}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
-          </div>
+          )}
+        </div>
+      </div>
 
-          <div className="p-4">
-            <GridCanvas
-              ref={canvasRef}
-              image={image}
-              canvasSize={canvasSize}
-              orientation={orientation}
-              customWidth={customWidth}
-              customHeight={customHeight}
-              customUnit={customUnit}
-              gridSize={gridSize}
-              lineWidth={lineWidth}
-              lineOpacity={lineOpacity}
-              showDiagonals={showDiagonals}
-              showGridNumbers={showGridNumbers}
-              lineColor={lineColor}
-              gridUnit={gridUnit}
-              formatGridSize={formatGridSize}
-            />
+      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t p-3 flex gap-2">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => {
+            setImage(null);
+            toast.info('Canvas cleared');
+          }}
+        >
+          Clear Canvas
+        </Button>
 
-            {!isMobile && (
-              <div className="mt-6 max-w-4xl mx-auto">
+        {isMobile ? (
+          <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <DrawerTrigger asChild>
+              <Button
+                variant="default"
+                className="flex-1 bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
+              >
+                <Settings className="w-4 h-4 mr-1" />
+                Settings
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="max-h-[85vh]">
+              <DrawerHeader>
+                <DrawerTitle>Grid Settings</DrawerTitle>
+              </DrawerHeader>
+              <div className="px-4 pb-8 overflow-y-auto">
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    onClick={exportCanvas}
+                    className="w-full"
+                  >
+                    Export Image
+                  </Button>
+                </div>
+
                 <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
-                    <TabsTrigger value="canvas">Canvas Settings</TabsTrigger>
-                    <TabsTrigger value="grid">Grid Settings</TabsTrigger>
-                    <TabsTrigger value="export">Export Settings</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="canvas">Canvas</TabsTrigger>
+                    <TabsTrigger value="grid">Grid</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="canvas" className="space-y-4">
                     <CanvasSettings
                       canvasSize={canvasSize}
-                      setCanvasSize={setCanvasSize}
                       orientation={orientation}
-                      setOrientation={setOrientation}
                       customWidth={customWidth}
                       customHeight={customHeight}
                       customUnit={customUnit}
+                      onCanvasSizeChange={setCanvasSize}
+                      onOrientationChange={setOrientation}
                       onCustomDimensionsChange={handleCustomDimensionsChange}
+                      onImportClick={() => fileInputRef.current?.click()}
                     />
                   </TabsContent>
 
                   <TabsContent value="grid" className="space-y-4">
                     <GridSettings
                       gridSize={gridSize}
-                      setGridSize={setGridSize}
                       lineWidth={lineWidth}
-                      setLineWidth={setLineWidth}
                       lineOpacity={lineOpacity}
-                      setLineOpacity={setLineOpacity}
                       showDiagonals={showDiagonals}
-                      setShowDiagonals={setShowDiagonals}
                       showGridNumbers={showGridNumbers}
-                      setShowGridNumbers={setShowGridNumbers}
                       lineColor={lineColor}
-                      setLineColor={setLineColor}
                       gridUnit={gridUnit}
-                      setGridUnit={setGridUnit}
+                      onGridSizeChange={setGridSize}
+                      onLineWidthChange={setLineWidth}
+                      onLineOpacityChange={setLineOpacity}
+                      onShowDiagonalsChange={setShowDiagonals}
+                      onShowGridNumbersChange={setShowGridNumbers}
+                      onLineColorChange={setLineColor}
+                      onGridUnitChange={setGridUnit}
                       formatGridSize={formatGridSize}
                     />
                   </TabsContent>
-
-                  <TabsContent value="export" className="space-y-4">
-                    <ExportSettings onExport={exportCanvas} />
-                  </TabsContent>
                 </Tabs>
               </div>
-            )}
-          </div>
-        </>
-      )}
+            </DrawerContent>
+          </Drawer>
+        ) : (
+          <Button
+            variant="default"
+            className="flex-1 bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
+            onClick={() => setSettingsOpen(!settingsOpen)}
+          >
+            <Settings className="w-4 h-4 mr-1" />
+            Settings
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
