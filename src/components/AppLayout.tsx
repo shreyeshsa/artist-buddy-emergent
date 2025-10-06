@@ -17,7 +17,7 @@ import { PaletteProjectsTab } from "@/components/tabs/PaletteProjectsTab";
 import { BottomNavigation } from "./BottomNavigation";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-type TabType = "grid" | "colorPicker" | "colorTheory" | "colorMixer" | "yourPalette" | "projects" | "paletteProjects";
+type TabType = "grid" | "colorPicker" | "colorTheory" | "yourPalette" | "library";
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
@@ -104,20 +104,33 @@ const AppLayout = () => {
     grid: <GridTab />,
     colorPicker: <ColorPickerTab />,
     colorTheory: <ColorTheoryTab />,
-    colorMixer: <ColorMixerTab />,
     yourPalette: <YourPaletteTab />,
-    projects: <ProjectsTab />,
-    paletteProjects: <PaletteProjectsTab />,
+    library: (
+      <div className="p-4 pb-20">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2">Library</h2>
+          <p className="text-muted-foreground">Manage your projects and saved palettes</p>
+        </div>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Grid Projects</h3>
+            <ProjectsTab />
+          </div>
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-3">Palette Projects</h3>
+            <PaletteProjectsTab />
+          </div>
+        </div>
+      </div>
+    ),
   };
 
   const tabs = [
     { id: "grid", label: "Grids", icon: <Grid className="h-5 w-5" /> },
-    { id: "projects", label: "Projects", icon: <FolderOpen className="h-5 w-5" /> },
-    { id: "colorPicker", label: "Color Picker", icon: <Pipette className="h-5 w-5" /> },
-    { id: "colorTheory", label: "Color Theory", icon: <Palette className="h-5 w-5" /> },
-    { id: "colorMixer", label: "Color Mixer", icon: <Droplet className="h-5 w-5" /> },
-    { id: "yourPalette", label: "Your Palette", icon: <BookOpen className="h-5 w-5" /> },
-    { id: "paletteProjects", label: "Palette Projects", icon: <Library className="h-5 w-5" /> },
+    { id: "colorPicker", label: "Picker", icon: <Pipette className="h-5 w-5" /> },
+    { id: "colorTheory", label: "Theory", icon: <Palette className="h-5 w-5" /> },
+    { id: "yourPalette", label: "Palette", icon: <BookOpen className="h-5 w-5" /> },
+    { id: "library", label: "Library", icon: <Library className="h-5 w-5" /> },
   ];
 
   return (

@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { rgbToHexColor, hexToRgb, hsvToHex } from "@/utils/colorUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { toast } from "sonner";
+import InteractiveColorWheel from "@/components/color-theory/InteractiveColorWheel";
 
 // HSV Slider component
 const HSVSlider = ({ onColorSelect }: { onColorSelect: (color: string) => void }) => {
@@ -930,6 +931,7 @@ const ColorTheoryTab = () => {
           <ScrollArea className="w-full">
             <TabsList className="w-full flex overflow-x-auto justify-start">
               <TabsTrigger value="concepts">Concepts</TabsTrigger>
+              <TabsTrigger value="wheel">Color Wheel</TabsTrigger>
               <TabsTrigger value="hsv">HSV Tool</TabsTrigger>
               <TabsTrigger value="tints">Tints & Shades</TabsTrigger>
               <TabsTrigger value="harmony">Harmony Explorer</TabsTrigger>
@@ -949,7 +951,11 @@ const ColorTheoryTab = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
+          <TabsContent value="wheel" className="space-y-4">
+            <InteractiveColorWheel onColorSelect={setSelectedColor} />
+          </TabsContent>
+
           <TabsContent value="hsv" className="space-y-4">
             <Card>
               <CardHeader>

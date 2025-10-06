@@ -5,10 +5,17 @@ import ColorSearch from "@/components/color-reference/ColorSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Download, Save } from "lucide-react";
+import { Plus, Download, Save, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import ColorPaletteGroup, { ColorItem } from "@/components/palette/ColorPaletteGroup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { exportPalette, ExportFormat } from "@/utils/paletteExport";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { savePaletteProject } from "@/utils/databaseUtils";
 import { usePersistedState } from "@/hooks/usePersistedState";
@@ -133,13 +140,11 @@ const YourPaletteTab = () => {
     }
   };
 
-  const handleExportPalette = (palette: {id: string; name: string; colors: ColorItem[]}) => {
-    // Create a canvas to render the palette
+  const handleExportPalettePNG = (palette: {id: string; name: string; colors: ColorItem[]}) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
     const colorSize = 60;
     const padding = 20;
     const spacing = 10;
@@ -147,19 +152,16 @@ const YourPaletteTab = () => {
 
     const rows = Math.ceil(palette.colors.length / colorsPerRow);
     canvas.width = padding * 2 + colorsPerRow * colorSize + (colorsPerRow - 1) * spacing;
-    canvas.height = padding * 3 + rows * (colorSize + spacing) + 40; // Extra height for title
+    canvas.height = padding * 3 + rows * (colorSize + spacing) + 40;
 
-    // Fill background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw title
     ctx.fillStyle = '#000000';
     ctx.font = 'bold 20px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(palette.name, canvas.width / 2, padding + 20);
 
-    // Draw colors
     palette.colors.forEach((color, index) => {
       const row = Math.floor(index / colorsPerRow);
       const col = index % colorsPerRow;
@@ -167,26 +169,42 @@ const YourPaletteTab = () => {
       const x = padding + col * (colorSize + spacing);
       const y = padding * 2 + 40 + row * (colorSize + spacing);
 
-      // Draw color square
       ctx.fillStyle = color.color;
       ctx.fillRect(x, y, colorSize, colorSize);
       ctx.strokeStyle = '#000000';
       ctx.strokeRect(x, y, colorSize, colorSize);
 
-      // Draw color info
       ctx.fillStyle = '#000000';
       ctx.font = '10px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(`${color.code}`, x + colorSize / 2, y + colorSize + 12);
     });
 
-    // Export as PNG
     const link = document.createElement('a');
     link.download = `${palette.name.replace(/\s+/g, '-').toLowerCase()}-palette.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
 
     toast.success(`Exported ${palette.name} palette as PNG`);
+  };
+
+  const handleExportPalette = (palette: {id: string; name: string; colors: ColorItem[]}, format: ExportFormat) => {
+    if (palette.colors.length === 0) {
+      toast.error("Cannot export an empty palette");
+      return;
+    }
+
+    const paletteColors = palette.colors.map(c => ({
+      name: c.name,
+      hex: c.color
+    }));
+
+    try {
+      exportPalette(paletteColors, format, palette.name);
+      toast.success(`Exported ${palette.name} as ${format.toUpperCase()}`);
+    } catch (error) {
+      toast.error("Failed to export palette");
+    }
   };
   
   return (
@@ -240,14 +258,36 @@ const YourPaletteTab = () => {
                       <span className="hidden sm:inline">Save in Project</span>
                       <span className="sm:hidden">Save</span>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleExportPalette(palette)}
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Export</span>
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <FileDown className="h-4 w-4 mr-1" />
+                          <span className="hidden sm:inline">Export</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExportPalettePNG(palette)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          PNG Image
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportPalette(palette, 'aco')}>
+                          <FileDown className="h-4 w-4 mr-2" />
+                          .ACO (Photoshop)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportPalette(palette, 'gpl')}>
+                          <FileDown className="h-4 w-4 mr-2" />
+                          .GPL (GIMP/Krita)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportPalette(palette, 'csv')}>
+                          <FileDown className="h-4 w-4 mr-2" />
+                          CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportPalette(palette, 'json')}>
+                          <FileDown className="h-4 w-4 mr-2" />
+                          JSON
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button
                       variant="destructive"
                       size="sm"

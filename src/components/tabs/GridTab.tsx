@@ -1,7 +1,11 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Settings, Upload } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import GridCanvas from "@/components/grid/GridCanvas";
 import CanvasSettings from "@/components/grid/CanvasSettings";
@@ -27,17 +31,17 @@ const GridTab = () => {
   const [gridUnit, setGridUnit] = usePersistedState("grid_gridUnit", "cm");
 
   const [image, setImage] = usePersistedState<string | null>("grid_image", null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
-  const [activeTab, setActiveTab] = usePersistedState("grid_activeTab", "canvas");
+  const [activeSettingsTab, setActiveSettingsTab] = useState("canvas");
 
-  // Format grid size for display
   const formatGridSize = (size: number): string => {
     if (gridUnit === "cm") {
       const cmValue = size / CM_TO_PIXELS;
-      
-      // Format to clean values
+
       if (cmValue >= 0.95 && cmValue < 1.05) return "1.0";
       if (cmValue >= 1.45 && cmValue < 1.55) return "1.5";
       if (cmValue >= 1.95 && cmValue < 2.05) return "2.0";
@@ -46,8 +50,7 @@ const GridTab = () => {
       if (cmValue >= 3.45 && cmValue < 3.55) return "3.5";
       if (cmValue >= 3.95 && cmValue < 4.05) return "4.0";
       if (cmValue >= 4.45 && cmValue < 4.55) return "4.5";
-      
-      // Default to fixed format
+
       return cmValue.toFixed(1);
     } else {
       const inValue = size / STANDARD_DPI;
@@ -55,17 +58,15 @@ const GridTab = () => {
     }
   };
 
-  // Handle image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
-    // Check if file is an image
+
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
@@ -79,270 +80,299 @@ const GridTab = () => {
     reader.readAsDataURL(file);
   };
 
-  // Handle custom dimensions change
   const handleCustomDimensionsChange = (width: number, height: number, unit: "cm" | "inches") => {
     setCustomWidth(width);
     setCustomHeight(height);
     setCustomUnit(unit);
   };
 
-  // Export canvas with grid size information
   const exportCanvas = () => {
     const canvas = document.querySelector('canvas');
     if (!canvas) return;
-    
+
     try {
-      // Create a temporary canvas to add grid size information
       const tempCanvas = document.createElement('canvas');
       const ctx = tempCanvas.getContext('2d');
       if (!ctx) {
         toast.error('Could not create canvas context');
         return;
       }
-      
-      // Set the temp canvas size to match the original
+
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
-      
-      // Draw the original canvas content
+
       ctx.drawImage(canvas, 0, 0);
-      
-      // Add grid size information if the option is enabled
+
       const includeGridInfoCheckbox = document.getElementById('include-grid-info') as HTMLInputElement;
-      if (includeGridInfoCheckbox && includeGridInfoCheckbox.checked) {
-        // The grid info is already drawn on canvas if showGridNumbers is enabled
-        // Only add it here if showGridNumbers is disabled but includeGridInfo is checked
-        if (!showGridNumbers) {
-          // Set text properties
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-          const padding = 8;
-          const infoFontSize = 12;
-          ctx.font = `${infoFontSize}px Arial`;
-          
-          // Create info text
-          const gridSizeText = `Grid: ${formatGridSize(gridSize)}${gridUnit}`;
-          
-          // Get paper dimensions in the appropriate unit
-          let paperWidth, paperHeight, unitLabel;
-          if (customUnit === "cm") {
-            paperWidth = customWidth;
-            paperHeight = customHeight;
-            unitLabel = "cm";
-          } else {
-            paperWidth = customWidth;
-            paperHeight = customHeight;
-            unitLabel = "in";
-          }
-          
-          // Format orientation information
-          const orientationText = orientation.charAt(0).toUpperCase() + orientation.slice(1);
-          
-          // Create full info text
-          const infoText = `${gridSizeText} | Paper: ${paperWidth}×${paperHeight}${unitLabel} (${canvasSize.toUpperCase()} ${orientationText})`;
-          
-          const textWidth = ctx.measureText(infoText).width;
-          
-          // Draw background rectangle
-          ctx.fillRect(
-            tempCanvas.width - textWidth - padding * 2, 
-            tempCanvas.height - infoFontSize - padding * 2,
-            textWidth + padding * 2,
-            infoFontSize + padding * 2
-          );
-          
-          // Draw text
-          ctx.textAlign = "right";
-          ctx.textBaseline = "bottom";
-          ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-          ctx.fillText(
-            infoText,
-            tempCanvas.width - padding,
-            tempCanvas.height - padding
-          );
+      if (includeGridInfoCheckbox && includeGridInfoCheckbox.checked && !showGridNumbers) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        const padding = 8;
+        const infoFontSize = 12;
+        ctx.font = `${infoFontSize}px Arial`;
+
+        const gridSizeText = `Grid: ${formatGridSize(gridSize)}${gridUnit}`;
+
+        let paperWidth, paperHeight, unitLabel;
+        if (customUnit === "cm") {
+          paperWidth = customWidth;
+          paperHeight = customHeight;
+          unitLabel = "cm";
+        } else {
+          paperWidth = customWidth;
+          paperHeight = customHeight;
+          unitLabel = "in";
         }
+
+        const orientationText = orientation.charAt(0).toUpperCase() + orientation.slice(1);
+        const infoText = `${gridSizeText} | Paper: ${paperWidth}×${paperHeight}${unitLabel} (${canvasSize.toUpperCase()} ${orientationText})`;
+
+        const textWidth = ctx.measureText(infoText).width;
+
+        ctx.fillRect(
+          tempCanvas.width - textWidth - padding * 2,
+          tempCanvas.height - infoFontSize - padding * 2,
+          textWidth + padding * 2,
+          infoFontSize + padding * 2
+        );
+
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+        ctx.fillText(
+          infoText,
+          tempCanvas.width - padding,
+          tempCanvas.height - padding
+        );
       }
-      
-      // Create filename with timestamp
+
       let filename = `grid-${Date.now()}`;
-      
-      // Convert to the proper format and trigger download
       let mimeType = 'image/png';
       let extension = 'png';
-      
-      const formatSelect = document.querySelector('#export-format [data-value]') as HTMLElement;
-      if (formatSelect) {
-        const format = formatSelect.getAttribute('data-value');
-        if (format === 'jpeg') {
-          mimeType = 'image/jpeg';
-          extension = 'jpg';
-        } else if (format === 'pdf') {
-          // PDF export would require additional libraries
-          mimeType = 'image/png'; // Fallback to PNG
-          extension = 'png';
-          toast.warning('PDF export not available, saving as PNG');
+
+      tempCanvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to create image blob');
+          return;
         }
-      }
-      
-      // For mobile platforms, use different approaches
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Try to use the FileSaver API for iOS/Android
-        tempCanvas.toBlob((blob) => {
-          if (!blob) {
-            toast.error('Failed to create image blob');
-            return;
-          }
-          
-          // Use standard download approach via URL and download attribute
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${filename}.${extension}`;
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          
-          // Clean up
-          setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-          }, 100);
-          
-          toast.success('Image saved to your device');
-        }, mimeType);
-      } else {
-        // Traditional download approach for desktop
+
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
+        link.href = url;
         link.download = `${filename}.${extension}`;
-        link.href = tempCanvas.toDataURL(mimeType);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast.success('Canvas exported successfully');
-      }
-    } catch (err) {
+        URL.revokeObjectURL(url);
+
+        toast.success('Canvas exported successfully!');
+      }, mimeType);
+    } catch (error) {
+      console.error('Export error:', error);
       toast.error('Failed to export canvas');
-      console.error('Export error:', err);
     }
-  };
-
-  // Determine if grid tab should be enabled
-  const isGridTabEnabled = canvasSize !== "" && orientation !== "";
-  // Determine if export tab should be enabled
-  const isExportTabEnabled = isGridTabEnabled && gridSize > 0;
-
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    if (value === "grid" && !isGridTabEnabled) {
-      toast.warning("Please set canvas orientation and size first");
-      return;
-    }
-    
-    if (value === "export" && !isExportTabEnabled) {
-      toast.warning("Please configure grid settings first");
-      return;
-    }
-    
-    setActiveTab(value);
   };
 
   return (
-    <div className="p-4 pb-20">
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold mb-2">Grid Creator</h2>
-        <p className="text-muted-foreground">Set up your canvas, import images, and apply custom grids</p>
-      </div>
-
-      {/* Canvas Component */}
-      <GridCanvas 
-        canvasSize={canvasSize}
-        orientation={orientation}
-        gridSize={gridSize}
-        lineWidth={lineWidth}
-        lineOpacity={lineOpacity}
-        showDiagonals={showDiagonals}
-        showGridNumbers={showGridNumbers}
-        lineColor={lineColor}
-        image={image}
-        customWidth={customWidth}
-        customHeight={customHeight}
-        customUnit={customUnit}
-        onUploadImage={handleImageUpload}
-        gridUnit={gridUnit} // Pass gridUnit to GridCanvas
+    <div className="relative h-full">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleImageUpload}
       />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="canvas">Canvas</TabsTrigger>
-          <TabsTrigger value="grid" className={!isGridTabEnabled ? "opacity-50 cursor-not-allowed" : ""}>Grid</TabsTrigger>
-          <TabsTrigger value="export" className={!isExportTabEnabled ? "opacity-50 cursor-not-allowed" : ""}>Export</TabsTrigger>
-        </TabsList>
-        
-        {/* Canvas Settings */}
-        <TabsContent value="canvas" className="space-y-4 mt-4">
-          <CanvasSettings 
-            canvasSize={canvasSize}
-            orientation={orientation}
-            customWidth={customWidth}
-            customHeight={customHeight}
-            customUnit={customUnit}
-            onCanvasSizeChange={setCanvasSize}
-            onOrientationChange={setOrientation}
-            onCustomDimensionsChange={handleCustomDimensionsChange}
-            onImportClick={() => fileInputRef.current?.click()}
-          />
-        </TabsContent>
-        
-        {/* Grid Settings */}
-        <TabsContent value="grid" className="space-y-4 mt-4">
-          <GridSettings 
-            gridSize={gridSize}
-            lineWidth={lineWidth}
-            lineOpacity={lineOpacity}
-            showDiagonals={showDiagonals}
-            showGridNumbers={showGridNumbers}
-            lineColor={lineColor}
-            onGridSizeChange={(size) => {
-              setGridSize(size);
-              // Update gridUnit when grid size changes
-              const gridUnitSelect = document.querySelector('select[id^="radix-"][data-value]') as HTMLSelectElement;
-              if (gridUnitSelect) {
-                setGridUnit(gridUnitSelect.value);
-              }
-            }}
-            onLineWidthChange={setLineWidth}
-            onLineOpacityChange={setLineOpacity}
-            onShowDiagonalsChange={setShowDiagonals}
-            onShowGridNumbersChange={setShowGridNumbers}
-            onLineColorChange={setLineColor}
-          />
-        </TabsContent>
-        
-        {/* Export Settings */}
-        <TabsContent value="export" className="space-y-4 mt-4">
-          <ExportSettings
-            onExport={exportCanvas}
-            gridSize={gridSize}
-            gridUnit={gridUnit}
-            canvasData={{
-              canvasSize,
-              orientation,
-              customWidth,
-              customHeight,
-              customUnit,
-              image,
-            }}
-            gridSettings={{
-              gridSize,
-              lineWidth,
-              lineOpacity,
-              showDiagonals,
-              showGridNumbers,
-              lineColor,
-              gridUnit,
-            }}
-          />
-        </TabsContent>
-      </Tabs>
+      {!image ? (
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] px-4">
+          <div className="text-center space-y-4 max-w-md">
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-artify-pink to-artify-purple rounded-full flex items-center justify-center">
+              <Upload className="w-12 h-12 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold">Start Creating</h3>
+            <p className="text-muted-foreground">
+              Upload an image to add a reference grid overlay
+            </p>
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              size="lg"
+              className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90 shadow-lg"
+            >
+              <Upload className="w-5 h-5 mr-2" />
+              Upload Image
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b p-3 flex justify-between items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setImage(null);
+                toast.info('Canvas cleared');
+              }}
+            >
+              Clear Canvas
+            </Button>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                Change Image
+              </Button>
+
+              {isMobile ? (
+                <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
+                  <DrawerTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
+                    >
+                      <Settings className="w-4 h-4 mr-1" />
+                      Settings
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="max-h-[85vh]">
+                    <DrawerHeader>
+                      <DrawerTitle>Grid Settings</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="px-4 pb-8 overflow-y-auto">
+                      <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
+                        <TabsList className="grid w-full grid-cols-3 mb-4">
+                          <TabsTrigger value="canvas">Canvas</TabsTrigger>
+                          <TabsTrigger value="grid">Grid</TabsTrigger>
+                          <TabsTrigger value="export">Export</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="canvas" className="space-y-4">
+                          <CanvasSettings
+                            canvasSize={canvasSize}
+                            setCanvasSize={setCanvasSize}
+                            orientation={orientation}
+                            setOrientation={setOrientation}
+                            customWidth={customWidth}
+                            customHeight={customHeight}
+                            customUnit={customUnit}
+                            onCustomDimensionsChange={handleCustomDimensionsChange}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="grid" className="space-y-4">
+                          <GridSettings
+                            gridSize={gridSize}
+                            setGridSize={setGridSize}
+                            lineWidth={lineWidth}
+                            setLineWidth={setLineWidth}
+                            lineOpacity={lineOpacity}
+                            setLineOpacity={setLineOpacity}
+                            showDiagonals={showDiagonals}
+                            setShowDiagonals={setShowDiagonals}
+                            showGridNumbers={showGridNumbers}
+                            setShowGridNumbers={setShowGridNumbers}
+                            lineColor={lineColor}
+                            setLineColor={setLineColor}
+                            gridUnit={gridUnit}
+                            setGridUnit={setGridUnit}
+                            formatGridSize={formatGridSize}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="export" className="space-y-4">
+                          <ExportSettings onExport={exportCanvas} />
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={exportCanvas}
+                  className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
+                >
+                  Export
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4">
+            <GridCanvas
+              ref={canvasRef}
+              image={image}
+              canvasSize={canvasSize}
+              orientation={orientation}
+              customWidth={customWidth}
+              customHeight={customHeight}
+              customUnit={customUnit}
+              gridSize={gridSize}
+              lineWidth={lineWidth}
+              lineOpacity={lineOpacity}
+              showDiagonals={showDiagonals}
+              showGridNumbers={showGridNumbers}
+              lineColor={lineColor}
+              gridUnit={gridUnit}
+              formatGridSize={formatGridSize}
+            />
+
+            {!isMobile && (
+              <div className="mt-6 max-w-4xl mx-auto">
+                <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
+                  <TabsList className="grid w-full grid-cols-3 mb-4">
+                    <TabsTrigger value="canvas">Canvas Settings</TabsTrigger>
+                    <TabsTrigger value="grid">Grid Settings</TabsTrigger>
+                    <TabsTrigger value="export">Export Settings</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="canvas" className="space-y-4">
+                    <CanvasSettings
+                      canvasSize={canvasSize}
+                      setCanvasSize={setCanvasSize}
+                      orientation={orientation}
+                      setOrientation={setOrientation}
+                      customWidth={customWidth}
+                      customHeight={customHeight}
+                      customUnit={customUnit}
+                      onCustomDimensionsChange={handleCustomDimensionsChange}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="grid" className="space-y-4">
+                    <GridSettings
+                      gridSize={gridSize}
+                      setGridSize={setGridSize}
+                      lineWidth={lineWidth}
+                      setLineWidth={setLineWidth}
+                      lineOpacity={lineOpacity}
+                      setLineOpacity={setLineOpacity}
+                      showDiagonals={showDiagonals}
+                      setShowDiagonals={setShowDiagonals}
+                      showGridNumbers={showGridNumbers}
+                      setShowGridNumbers={setShowGridNumbers}
+                      lineColor={lineColor}
+                      setLineColor={setLineColor}
+                      gridUnit={gridUnit}
+                      setGridUnit={setGridUnit}
+                      formatGridSize={formatGridSize}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="export" className="space-y-4">
+                    <ExportSettings onExport={exportCanvas} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

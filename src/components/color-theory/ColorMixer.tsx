@@ -1,14 +1,13 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { InputGroup } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
-import { rgbToHex } from "@/utils/colorUtils";
+import { mixColorsWeighted } from "@/utils/colorUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { X } from "lucide-react";
 
 interface ColorMixerProps {
   onClose: () => void;
@@ -23,7 +22,6 @@ interface PaintColor {
   ratio: number;
 }
 
-// Organize Prismacolor pencils by sets
 const prismacolorSets = {
   "24": [
     { id: 901, name: "Indigo Blue", code: "PC901", color: "#000F89" },
@@ -89,7 +87,6 @@ const prismacolorSets = {
     { id: 1003, name: "Spanish Orange", code: "PC1003", color: "#E86100" }
   ],
   "72": [
-    // First 36 colors from 72-color set
     { id: 901, name: "Indigo Blue", code: "PC901", color: "#000F89" },
     { id: 902, name: "Ultramarine", code: "PC902", color: "#120A8F" },
     { id: 903, name: "True Blue", code: "PC903", color: "#0047AB" },
@@ -126,8 +123,6 @@ const prismacolorSets = {
     { id: 940, name: "Sand", code: "PC940", color: "#C2B280" },
     { id: 941, name: "Light Umber", code: "PC941", color: "#AA8C69" },
     { id: 942, name: "Yellow Ochre", code: "PC942", color: "#CB9D06" },
-    
-    // Next 36 colors from 72-color set
     { id: 943, name: "Burnt Ochre", code: "PC943", color: "#BB8B54" },
     { id: 944, name: "Terra Cotta", code: "PC944", color: "#E2725B" },
     { id: 945, name: "Sienna Brown", code: "PC945", color: "#882D17" },
@@ -167,7 +162,6 @@ const prismacolorSets = {
   ]
 };
 
-// Most common oil paint colors
 const oilColors = [
   { id: 1, name: "Titanium White", code: "W&N 644", color: "#FFFFFF" },
   { id: 2, name: "Ivory Black", code: "W&N 331", color: "#000000" },
@@ -195,7 +189,6 @@ const oilColors = [
   { id: 24, name: "Zinc White", code: "W&N 748", color: "#FEFEFE" }
 ];
 
-// Most common watercolor colors
 const waterColors = [
   { id: 1, name: "Chinese White", code: "W&N 150", color: "#FFFFFF" },
   { id: 2, name: "Lamp Black", code: "W&N 337", color: "#000000" },
@@ -223,46 +216,16 @@ const waterColors = [
   { id: 24, name: "Opera Rose", code: "W&N 448", color: "#FF00A8" }
 ];
 
-// Simple color mixing function (simplified, not physically accurate)
-const mixColors = (colors: { color: string; ratio: number }[]) => {
-  if (colors.length === 0) return "#FFFFFF";
-  
-  let totalR = 0;
-  let totalG = 0;
-  let totalB = 0;
-  let totalRatio = 0;
-  
-  colors.forEach(({ color, ratio }) => {
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    
-    totalR += r * ratio;
-    totalG += g * ratio;
-    totalB += b * ratio;
-    totalRatio += ratio;
-  });
-  
-  if (totalRatio === 0) return "#FFFFFF";
-  
-  const r = Math.round(totalR / totalRatio);
-  const g = Math.round(totalG / totalRatio);
-  const b = Math.round(totalB / totalRatio);
-  
-  return rgbToHex(r, g, b);
-};
-
-const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
+const ColorMixerRefactored = ({ onClose, onSaveColor }: ColorMixerProps) => {
   const [selectedMedium, setSelectedMedium] = useState("prismacolor-24");
   const [selectedColors, setSelectedColors] = useState<PaintColor[]>([]);
   const [mixedColor, setMixedColor] = useState("#FFFFFF");
   const [mixedColorName, setMixedColorName] = useState("Custom Mix");
   const [activeSet, setActiveSet] = useState("24");
-  
+  const [focusedColorId, setFocusedColorId] = useState<number | null>(null);
+
   const isMobile = useMediaQuery("(max-width: 768px)");
-  
-  // Determine available colors based on medium
+
   const getAvailableColors = () => {
     if (selectedMedium.startsWith('prismacolor')) {
       const setSize = selectedMedium.split('-')[1];
@@ -273,33 +236,42 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
       return waterColors;
     }
   };
-  
+
   const availableColors = getAvailableColors();
-  
+
   const addColorToMix = (color: any) => {
     const newColor = { ...color, ratio: 50 };
-    setSelectedColors([...selectedColors, newColor]);
-    updateMixedColor([...selectedColors, newColor]);
+    const newColors = [...selectedColors, newColor];
+    setSelectedColors(newColors);
+    updateMixedColor(newColors);
   };
-  
+
   const removeColorFromMix = (id: number) => {
     const newColors = selectedColors.filter(c => c.id !== id);
     setSelectedColors(newColors);
     updateMixedColor(newColors);
+    if (focusedColorId === id) {
+      setFocusedColorId(null);
+    }
   };
-  
+
   const updateColorRatio = (id: number, ratio: number) => {
-    const newColors = selectedColors.map(c => 
+    const newColors = selectedColors.map(c =>
       c.id === id ? { ...c, ratio } : c
     );
     setSelectedColors(newColors);
     updateMixedColor(newColors);
   };
-  
+
   const updateMixedColor = (colors: PaintColor[]) => {
-    setMixedColor(mixColors(colors));
+    if (colors.length === 0) {
+      setMixedColor("#FFFFFF");
+      return;
+    }
+    const result = mixColorsWeighted(colors.map(c => ({ color: c.color, ratio: c.ratio })));
+    setMixedColor(result);
   };
-  
+
   const saveColorMix = () => {
     if (onSaveColor) {
       onSaveColor(mixedColor, mixedColorName || "Custom Mix");
@@ -307,20 +279,20 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
     onClose();
   };
 
-  // Handle color set changes
   const handleSetChange = (set: string) => {
     setActiveSet(set);
     setSelectedMedium(`prismacolor-${set}`);
   };
 
+  const focusedColor = selectedColors.find(c => c.id === focusedColorId);
+
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-xl font-semibold mb-4">Color Mixer</h3>
-        <p className="text-muted-foreground mb-4">Mix colors and see the results</p>
+        <p className="text-muted-foreground mb-4">Mix colors with realistic subtractive blending</p>
       </div>
-      
-      {/* Medium Selection Tabs */}
+
       <Tabs defaultValue="prismacolor" onValueChange={(value) => {
         if (value === 'prismacolor') {
           setSelectedMedium(`prismacolor-${activeSet}`);
@@ -333,25 +305,24 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
           <TabsTrigger value="oil">Oil Paint</TabsTrigger>
           <TabsTrigger value="watercolor">Watercolor</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="prismacolor" className="mt-4">
-          {/* Prismacolor Set Selection */}
           <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
-            <Button 
+            <Button
               variant={activeSet === "24" ? "default" : "outline"}
               size="sm"
               onClick={() => handleSetChange("24")}
             >
               24 Set
             </Button>
-            <Button 
+            <Button
               variant={activeSet === "36" ? "default" : "outline"}
               size="sm"
               onClick={() => handleSetChange("36")}
             >
               36 Set
             </Button>
-            <Button 
+            <Button
               variant={activeSet === "72" ? "default" : "outline"}
               size="sm"
               onClick={() => handleSetChange("72")}
@@ -359,20 +330,20 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
               72 Set
             </Button>
           </div>
-          
+
           <ScrollArea className="h-[280px] border rounded-md p-2">
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 p-1">
               {availableColors.map(color => (
-                <Button 
-                  key={color.id} 
-                  variant="outline" 
+                <Button
+                  key={color.id}
+                  variant="outline"
                   className="p-1 h-auto flex flex-col items-center"
                   onClick={() => addColorToMix(color)}
                   disabled={selectedColors.some(c => c.id === color.id)}
                 >
-                  <div 
-                    className="w-10 h-10 rounded-full mb-1" 
-                    style={{ backgroundColor: color.color }} 
+                  <div
+                    className="w-10 h-10 rounded-full mb-1"
+                    style={{ backgroundColor: color.color }}
                   />
                   <span className="text-xs text-center line-clamp-1">{color.code}</span>
                 </Button>
@@ -380,21 +351,21 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
             </div>
           </ScrollArea>
         </TabsContent>
-        
+
         <TabsContent value="oil" className="mt-4">
           <ScrollArea className="h-[280px] border rounded-md p-2">
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 p-1">
               {oilColors.map(color => (
-                <Button 
-                  key={color.id} 
-                  variant="outline" 
+                <Button
+                  key={color.id}
+                  variant="outline"
                   className="p-1 h-auto flex flex-col items-center"
                   onClick={() => addColorToMix(color)}
                   disabled={selectedColors.some(c => c.id === color.id)}
                 >
-                  <div 
-                    className="w-10 h-10 rounded-full mb-1" 
-                    style={{ backgroundColor: color.color }} 
+                  <div
+                    className="w-10 h-10 rounded-full mb-1"
+                    style={{ backgroundColor: color.color }}
                   />
                   <span className="text-xs text-center line-clamp-1">{color.code}</span>
                 </Button>
@@ -402,21 +373,21 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
             </div>
           </ScrollArea>
         </TabsContent>
-        
+
         <TabsContent value="watercolor" className="mt-4">
           <ScrollArea className="h-[280px] border rounded-md p-2">
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 p-1">
               {waterColors.map(color => (
-                <Button 
-                  key={color.id} 
-                  variant="outline" 
+                <Button
+                  key={color.id}
+                  variant="outline"
                   className="p-1 h-auto flex flex-col items-center"
                   onClick={() => addColorToMix(color)}
                   disabled={selectedColors.some(c => c.id === color.id)}
                 >
-                  <div 
-                    className="w-10 h-10 rounded-full mb-1" 
-                    style={{ backgroundColor: color.color }} 
+                  <div
+                    className="w-10 h-10 rounded-full mb-1"
+                    style={{ backgroundColor: color.color }}
                   />
                   <span className="text-xs text-center line-clamp-1">{color.code}</span>
                 </Button>
@@ -425,63 +396,92 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
           </ScrollArea>
         </TabsContent>
       </Tabs>
-      
-      {/* Mixing Area */}
+
       <div className="space-y-4">
-        <Label className="text-sm">Current Mix</Label>
-        
+        <Label className="text-sm">Mixer Tray</Label>
+
         {selectedColors.length === 0 ? (
           <div className="text-center p-4 border rounded-md bg-muted/20">
             <p className="text-muted-foreground">Add colors to start mixing</p>
           </div>
         ) : (
-          <ScrollArea className="h-[180px] border rounded-md">
-            <div className="p-2 space-y-3">
-              {selectedColors.map(color => (
-                <div key={color.id} className="border rounded-md p-3 bg-card">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-8 h-8 rounded-full" 
-                        style={{ backgroundColor: color.color }} 
-                      />
-                      <span className="text-sm line-clamp-1">{color.code}</span>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => removeColorFromMix(color.id)}
-                      className="h-8 px-2 py-0"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs w-7">{color.ratio}%</span>
-                    <Slider
-                      value={[color.ratio]}
-                      min={10}
-                      max={100}
-                      step={5}
-                      onValueChange={(values) => updateColorRatio(color.id, values[0])}
-                      className="flex-1"
+          <>
+            <ScrollArea className="w-full">
+              <div className="flex gap-2 pb-2">
+                {selectedColors.map(color => (
+                  <button
+                    key={color.id}
+                    onClick={() => setFocusedColorId(color.id)}
+                    className={`flex-shrink-0 relative group ${
+                      focusedColorId === color.id ? 'ring-2 ring-primary' : ''
+                    }`}
+                  >
+                    <div
+                      className="w-16 h-16 rounded-md shadow-md transition-transform hover:scale-105"
+                      style={{ backgroundColor: color.color }}
                     />
+                    <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeColorFromMix(color.id);
+                        }}
+                        className="bg-destructive text-destructive-foreground rounded-full p-1 shadow-lg"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <span className="text-xs text-center block mt-1">{color.code}</span>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+
+            {focusedColor && (
+              <div className="border rounded-md p-4 bg-card space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-md"
+                      style={{ backgroundColor: focusedColor.color }}
+                    />
+                    <div>
+                      <div className="font-medium">{focusedColor.name}</div>
+                      <div className="text-xs text-muted-foreground">{focusedColor.code}</div>
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeColorFromMix(focusedColor.id)}
+                  >
+                    Remove
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
+                <div className="flex items-center gap-3">
+                  <Label className="text-sm w-12">{focusedColor.ratio}%</Label>
+                  <Slider
+                    value={[focusedColor.ratio]}
+                    min={10}
+                    max={100}
+                    step={5}
+                    onValueChange={(values) => updateColorRatio(focusedColor.id, values[0])}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
-      
-      {/* Result */}
+
       <div className="space-y-2 pt-2">
         <Label className="text-sm">Mixed Result</Label>
         <div className="flex justify-between items-center p-4 border rounded-md">
           <div className="flex items-center space-x-3">
-            <div 
-              className="w-16 h-16 rounded-md shadow-inner" 
-              style={{ backgroundColor: mixedColor }} 
+            <div
+              className="w-16 h-16 rounded-md shadow-lg border-2 border-border"
+              style={{ backgroundColor: mixedColor }}
             />
             <div>
               <div className="font-medium">{mixedColor}</div>
@@ -491,21 +491,22 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
             </div>
           </div>
         </div>
-        
+
         {onSaveColor && (
           <div className="pt-2">
             <Label htmlFor="mix-name">Name your mix</Label>
-            <div className="flex mt-1">
-              <Input 
+            <div className="flex mt-1 gap-2">
+              <Input
                 id="mix-name"
                 value={mixedColorName}
                 onChange={(e) => setMixedColorName(e.target.value)}
-                className="flex-1 mr-2"
+                className="flex-1"
                 placeholder="Custom Mix"
               />
               <Button
                 onClick={saveColorMix}
                 disabled={selectedColors.length === 0}
+                className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
               >
                 Save
               </Button>
@@ -513,8 +514,7 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
           </div>
         )}
       </div>
-      
-      {/* Close Button */}
+
       <div className="flex justify-end">
         <Button
           variant="ghost"
@@ -527,4 +527,4 @@ const ColorMixer = ({ onClose, onSaveColor }: ColorMixerProps) => {
   );
 };
 
-export default ColorMixer;
+export default ColorMixerRefactored as typeof ColorMixerRefactored & { displayName?: string };

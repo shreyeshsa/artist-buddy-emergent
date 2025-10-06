@@ -10,21 +10,71 @@ export const rgbToHex = (r: number, g: number, b: number) => {
 // Alias the rgbToHex function for consistent naming
 export const rgbToHexColor = rgbToHex;
 
-// Function to calculate color distance (simple Euclidean distance in RGB space)
-export const colorDistance = (color1: string, color2: string) => {
-  const hex1 = color1.replace('#', '');
-  const hex2 = color2.replace('#', '');
-  
-  const r1 = parseInt(hex1.substring(0, 2), 16);
-  const g1 = parseInt(hex1.substring(2, 4), 16);
-  const b1 = parseInt(hex1.substring(4, 6), 16);
-  
-  const r2 = parseInt(hex2.substring(0, 2), 16);
-  const g2 = parseInt(hex2.substring(2, 4), 16);
-  const b2 = parseInt(hex2.substring(4, 6), 16);
-  
-  return Math.sqrt(Math.pow(r2 - r1, 2) + Math.pow(g2 - g1, 2) + Math.pow(b2 - b1, 2));
+const rgbToLab = (r: number, g: number, b: number) => {
+  let x = r / 255;
+  let y = g / 255;
+  let z = b / 255;
+
+  x = x > 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92;
+  y = y > 0.04045 ? Math.pow((y + 0.055) / 1.055, 2.4) : y / 12.92;
+  z = z > 0.04045 ? Math.pow((z + 0.055) / 1.055, 2.4) : z / 12.92;
+
+  x = x * 100;
+  y = y * 100;
+  z = z * 100;
+
+  x = x * 0.4124 + y * 0.3576 + z * 0.1805;
+  y = x * 0.2126 + y * 0.7152 + z * 0.0722;
+  z = x * 0.0193 + y * 0.1192 + z * 0.9505;
+
+  x = x / 95.047;
+  y = y / 100.0;
+  z = z / 108.883;
+
+  x = x > 0.008856 ? Math.pow(x, 1 / 3) : 7.787 * x + 16 / 116;
+  y = y > 0.008856 ? Math.pow(y, 1 / 3) : 7.787 * y + 16 / 116;
+  z = z > 0.008856 ? Math.pow(z, 1 / 3) : 7.787 * z + 16 / 116;
+
+  return {
+    l: 116 * y - 16,
+    a: 500 * (x - y),
+    b: 200 * (y - z)
+  };
 };
+
+export const colorDistanceCIE94 = (color1: string, color2: string) => {
+  const rgb1 = hexToRgb(color1);
+  const rgb2 = hexToRgb(color2);
+
+  const lab1 = rgbToLab(rgb1.r, rgb1.g, rgb1.b);
+  const lab2 = rgbToLab(rgb2.r, rgb2.g, rgb2.b);
+
+  const kL = 1;
+  const kC = 1;
+  const kH = 1;
+  const k1 = 0.045;
+  const k2 = 0.015;
+
+  const deltaL = lab1.l - lab2.l;
+  const c1 = Math.sqrt(lab1.a * lab1.a + lab1.b * lab1.b);
+  const c2 = Math.sqrt(lab2.a * lab2.a + lab2.b * lab2.b);
+  const deltaC = c1 - c2;
+  const deltaA = lab1.a - lab2.a;
+  const deltaB = lab1.b - lab2.b;
+  const deltaH = Math.sqrt(deltaA * deltaA + deltaB * deltaB - deltaC * deltaC);
+
+  const sL = 1;
+  const sC = 1 + k1 * c1;
+  const sH = 1 + k2 * c1;
+
+  const term1 = deltaL / (kL * sL);
+  const term2 = deltaC / (kC * sC);
+  const term3 = deltaH / (kH * sH);
+
+  return Math.sqrt(term1 * term1 + term2 * term2 + term3 * term3);
+};
+
+export const colorDistance = colorDistanceCIE94;
 
 // Simple color quantization to extract dominant colors
 export const extractDominantColors = (imageData: ImageData, maxColors: number = 8) => {
@@ -179,53 +229,56 @@ export const hsvToHex = (h: number, s: number, v: number) => {
 };
 
 // Calculate color blend modes
+export const mixColorsWeighted = (colors: Array<{color: string, ratio: number}>) => {
+  if (colors.length === 0) return '#FFFFFF';
+  if (colors.length === 1) return colors[0].color;
+
+  const totalRatio = colors.reduce((sum, c) => sum + c.ratio, 0);
+
+  let rSum = 0, gSum = 0, bSum = 0;
+
+  for (const {color, ratio} of colors) {
+    const rgb = hexToRgb(color);
+    const weight = ratio / totalRatio;
+    rSum += rgb.r * rgb.r * weight;
+    gSum += rgb.g * rgb.g * weight;
+    bSum += rgb.b * rgb.b * weight;
+  }
+
+  const r = Math.round(Math.sqrt(rSum));
+  const g = Math.round(Math.sqrt(gSum));
+  const b = Math.round(Math.sqrt(bSum));
+
+  return rgbToHex(r, g, b);
+};
+
 export const blendColors = (color1: string, color2: string, mode: string) => {
   const rgb1 = hexToRgb(color1);
   const rgb2 = hexToRgb(color2);
   let r, g, b;
-  
+
   switch (mode) {
-    case 'additive': // Light mixing (screens)
+    case 'additive':
       r = Math.min(rgb1.r + rgb2.r, 255);
       g = Math.min(rgb1.g + rgb2.g, 255);
       b = Math.min(rgb1.b + rgb2.b, 255);
       break;
-    case 'average': // Simple average
+    case 'average':
       r = Math.round((rgb1.r + rgb2.r) / 2);
       g = Math.round((rgb1.g + rgb2.g) / 2);
       b = Math.round((rgb1.b + rgb2.b) / 2);
       break;
-    case 'subtractive': // Pigment mixing (more realistic)
-      // Convert to CMY space
-      const cmy1 = {
-        c: 1 - rgb1.r / 255,
-        m: 1 - rgb1.g / 255,
-        y: 1 - rgb1.b / 255
-      };
-      const cmy2 = {
-        c: 1 - rgb2.r / 255,
-        m: 1 - rgb2.g / 255,
-        y: 1 - rgb2.b / 255
-      };
-      
-      // Mix in CMY
-      const cmyResult = {
-        c: (cmy1.c + cmy2.c) * 0.65, // Adjust multiplier for more realistic mixing
-        m: (cmy1.m + cmy2.m) * 0.65,
-        y: (cmy1.y + cmy2.y) * 0.65
-      };
-      
-      // Convert back to RGB
-      r = Math.round((1 - cmyResult.c) * 255);
-      g = Math.round((1 - cmyResult.m) * 255);
-      b = Math.round((1 - cmyResult.y) * 255);
+    case 'subtractive':
+      r = Math.round(Math.sqrt((rgb1.r * rgb1.r + rgb2.r * rgb2.r) / 2));
+      g = Math.round(Math.sqrt((rgb1.g * rgb1.g + rgb2.g * rgb2.g) / 2));
+      b = Math.round(Math.sqrt((rgb1.b * rgb1.b + rgb2.b * rgb2.b) / 2));
       break;
     default:
       r = Math.round((rgb1.r + rgb2.r) / 2);
       g = Math.round((rgb1.g + rgb2.g) / 2);
       b = Math.round((rgb1.b + rgb2.b) / 2);
   }
-  
+
   return rgbToHex(r, g, b);
 };
 
