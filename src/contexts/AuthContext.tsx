@@ -28,7 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error('Session fetch error:', error);
-          toast.error('Failed to connect to authentication service. Please refresh the page.');
         }
 
         if (mounted) {
@@ -41,18 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Auth initialization exception:', error);
         if (mounted) {
           setLoading(false);
-          toast.error('Authentication service unavailable. Please check your connection.');
         }
       }
     };
-
-    const timeoutId = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('Auth initialization timed out after 5 seconds');
-        setLoading(false);
-        toast.error('Connection timeout. Please refresh the page.');
-      }
-    }, 5000);
 
     initializeAuth();
 
@@ -70,50 +60,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      clearTimeout(timeoutId);
     };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('Attempting login...');
+      console.log('Attempting login with Supabase auth...');
 
-      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const localSupabaseUrl = 'http://localhost:54321';
-      const productionSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
-
-      const supabaseUrl = isDevelopment ? localSupabaseUrl : productionSupabaseUrl;
-      const apiUrl = `${supabaseUrl}/functions/v1/auth-login`;
-
-      console.log('Using API URL:', apiUrl);
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const result = await response.json();
-
-      if (!response.ok || result.error) {
-        console.error('Login error:', result.error);
-        toast.error(result.error || 'Login failed. Please check your credentials.');
+      if (error) {
+        console.error('Login error:', error);
+        toast.error(error.message || 'Login failed. Please check your credentials.');
         return false;
       }
 
-      if (result.success && result.user) {
-        console.log('Login successful:', result.user.email);
-
-        if (result.session) {
-          await supabase.auth.setSession({
-            access_token: result.session.access_token,
-            refresh_token: result.session.refresh_token,
-          });
-        }
-
-        setUser(result.user);
+      if (data.user && data.session) {
+        console.log('Login successful:', data.user.email);
+        setUser(data.user);
         setIsAuthenticated(true);
         toast.success("Login successful!");
         return true;
@@ -123,14 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     } catch (error: any) {
       console.error('Login exception:', error);
-      toast.error(error?.message || "Login failed. Please check your internet connection.");
+      toast.error(error?.message || "Login failed. Please try again.");
       return false;
     }
   };
 
   const signup = async (email: string, password: string, phoneNumber?: string): Promise<boolean> => {
     try {
-      console.log('Attempting signup...');
+      console.log('Attempting signup with Supabase auth...');
 
       if (!email || !email.includes('@')) {
         toast.error('Please enter a valid email address.');
@@ -142,40 +109,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const localSupabaseUrl = 'http://localhost:54321';
-      const productionSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+      const signupOptions: any = {
+        email,
+        password,
+        options: {
+          data: {}
+        }
+      };
 
-      const supabaseUrl = isDevelopment ? localSupabaseUrl : productionSupabaseUrl;
-      const apiUrl = `${supabaseUrl}/functions/v1/auth-signup`;
+      if (phoneNumber && phoneNumber.trim()) {
+        signupOptions.options.data.phone_number = phoneNumber;
+      }
 
-      console.log('Using API URL:', apiUrl);
+      const { data, error } = await supabase.auth.signUp(signupOptions);
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, phoneNumber }),
-      });
+      if (error) {
+        console.error('Signup error:', error);
 
-      const result = await response.json();
-
-      if (!response.ok || result.error) {
-        console.error('Signup error:', result.error);
-
-        if (result.error.includes('already registered')) {
+        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
           toast.error('This email is already registered. Please login instead.');
-        } else if (result.error.includes('password')) {
-          toast.error('Password must be at least 6 characters long.');
         } else {
-          toast.error(result.error || 'Signup failed. Please try again.');
+          toast.error(error.message || 'Signup failed. Please try again.');
         }
         return false;
       }
 
-      if (result.success && result.user) {
-        console.log('Signup successful:', result.user.email);
+      if (data.user) {
+        console.log('Signup successful:', data.user.email);
+
+        if (phoneNumber && phoneNumber.trim()) {
+          try {
+            const { error: profileError } = await supabase
+              .from('user_profiles')
+              .insert({
+                user_id: data.user.id,
+                phone_number: phoneNumber,
+              });
+
+            if (profileError) {
+              console.error('Error saving phone number:', profileError);
+            }
+          } catch (profileException) {
+            console.error('Profile creation exception:', profileException);
+          }
+        }
+
         toast.success("Account created successfully! You can now login.");
         return true;
       }
@@ -184,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     } catch (error: any) {
       console.error('Signup exception:', error);
-      toast.error(error?.message || "Signup failed. Please check your internet connection.");
+      toast.error(error?.message || "Signup failed. Please try again.");
       return false;
     }
   };
