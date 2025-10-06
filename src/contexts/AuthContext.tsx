@@ -78,8 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Attempting login...');
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const localSupabaseUrl = 'http://localhost:54321';
+      const productionSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+
+      const supabaseUrl = isDevelopment ? localSupabaseUrl : productionSupabaseUrl;
       const apiUrl = `${supabaseUrl}/functions/v1/auth-login`;
+
+      console.log('Using API URL:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -136,8 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const localSupabaseUrl = 'http://localhost:54321';
+      const productionSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+
+      const supabaseUrl = isDevelopment ? localSupabaseUrl : productionSupabaseUrl;
       const apiUrl = `${supabaseUrl}/functions/v1/auth-signup`;
+
+      console.log('Using API URL:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
