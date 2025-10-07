@@ -17,7 +17,9 @@ interface GridCanvasProps {
   customHeight: number;
   customUnit: "cm" | "inches";
   onUploadImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  gridUnit?: string; // Add gridUnit prop
+  onClearCanvas?: () => void;
+  gridUnit?: string;
+  formatGridSize?: (size: number) => string;
 }
 
 interface ImagePosition {
@@ -43,7 +45,9 @@ const GridCanvas = ({
   customHeight,
   customUnit,
   onUploadImage,
-  gridUnit = "cm" // Default to cm if not provided
+  onClearCanvas,
+  gridUnit = "cm",
+  formatGridSize
 }: GridCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -482,21 +486,21 @@ const GridCanvas = ({
       {image && (
         <div className="p-3 border-t flex justify-between items-center bg-white dark:bg-gray-800">
           <div className="flex gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setImageScale(prev => Math.min(prev + 0.1, 3))}
               disabled={fitToCanvas}
             >
-              Zoom In
+              +
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setImageScale(prev => Math.max(prev - 0.1, 0.5))}
               disabled={fitToCanvas}
             >
-              Zoom Out
+              -
             </Button>
             <Button
               variant="outline"
@@ -509,6 +513,13 @@ const GridCanvas = ({
               disabled={!imagePosition.x && !imagePosition.y && imageScale === 1}
             >
               Reset
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearCanvas}
+            >
+              Clear Canvas
             </Button>
           </div>
           <Button 

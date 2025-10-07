@@ -221,6 +221,23 @@ const GridTab = () => {
       ) : (
         <>
           <div className="p-4 pb-20">
+            <div className="mb-4 flex gap-2 flex-wrap">
+              <Button
+                onClick={exportCanvas}
+                className="bg-gradient-to-r from-blue-500 to-teal-500 hover:opacity-90"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Image
+              </Button>
+              <Button
+                onClick={() => setSaveDialogOpen(true)}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Project
+              </Button>
+            </div>
+
             <div className="relative">
               <GridCanvas
                 ref={canvasRef}
@@ -238,26 +255,10 @@ const GridTab = () => {
                 lineColor={lineColor}
                 gridUnit={gridUnit}
                 formatGridSize={formatGridSize}
+                onUploadImage={handleImageUpload}
+                onClearCanvas={() => setImage(null)}
               />
 
-              <div className="fixed top-20 right-4 z-20 flex flex-col gap-2">
-                <Button
-                  onClick={exportCanvas}
-                  size="icon"
-                  className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-teal-500 hover:opacity-90"
-                  title="Export Image"
-                >
-                  <Download className="h-5 w-5" />
-                </Button>
-                <Button
-                  onClick={() => setSaveDialogOpen(true)}
-                  size="icon"
-                  className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90"
-                  title="Save Project"
-                >
-                  <Save className="h-5 w-5" />
-                </Button>
-              </div>
             </div>
 
             {!isMobile && (
@@ -306,14 +307,14 @@ const GridTab = () => {
           </div>
 
           {isMobile && (
-            <div className="fixed bottom-20 right-4 z-20">
+            <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-20">
               <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
                 <DrawerTrigger asChild>
                   <Button
-                    size="icon"
-                    className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90"
+                    className="h-12 px-6 rounded-full shadow-lg bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90"
                   >
-                    <Settings className="h-6 w-6" />
+                    <Settings className="w-5 h-5 mr-2" />
+                    Grid Settings
                   </Button>
                 </DrawerTrigger>
                 <DrawerContent className="max-h-[85vh]">
