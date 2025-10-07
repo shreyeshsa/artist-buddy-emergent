@@ -76,8 +76,12 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('=== LOGIN FORM SUBMITTED ===');
+    console.log('Form email:', email);
+    console.log('Form password length:', password.length);
     setIsLoading(true);
-    await login(email, password);
+    const result = await login(email, password);
+    console.log('Login result:', result);
     setIsLoading(false);
   };
 
