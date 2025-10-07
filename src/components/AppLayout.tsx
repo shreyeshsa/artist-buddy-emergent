@@ -23,19 +23,24 @@ const AppLayout = () => {
   const { logout } = useAuth();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  // Add viewport meta control to prevent page zooming
+  // Improve mobile experience
   useEffect(() => {
-    // Add meta viewport tag to prevent zooming
-    const metaViewport = document.createElement('meta');
-    metaViewport.name = 'viewport';
-    metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-    document.head.appendChild(metaViewport);
+    // Update existing viewport meta tag for better mobile UX
+    const existingViewport = document.querySelector('meta[name="viewport"]');
+    const originalContent = existingViewport?.getAttribute('content');
+    
+    if (existingViewport) {
+      existingViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    }
 
     // Add touch-action CSS to prevent default zooming
     document.documentElement.style.touchAction = 'manipulation';
     
     return () => {
-      document.head.removeChild(metaViewport);
+      // Restore original viewport if it existed
+      if (existingViewport && originalContent) {
+        existingViewport.setAttribute('content', originalContent);
+      }
       document.documentElement.style.touchAction = '';
     };
   }, []);
