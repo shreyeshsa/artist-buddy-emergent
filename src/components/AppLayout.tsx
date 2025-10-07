@@ -8,14 +8,15 @@ import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMe
 import { Grid2x2 as Grid, PenTool, Palette, BookOpen, LogOut, Droplet, Pipette, FolderOpen, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GridTab from "@/components/tabs/GridTab";
-import ColorToolsTab from "@/components/tabs/ColorToolsTab";
+import ColorToolsTab from "@/components/tabs/ColorToolsTabNew";
+import ColorMixerTab from "@/components/tabs/ColorMixerTab";
 import LibraryTab from "@/components/tabs/LibraryTab";
 import { ProjectsTab } from "@/components/tabs/ProjectsTab";
 import { PaletteProjectsTab } from "@/components/tabs/PaletteProjectsTab";
 import { BottomNavigation } from "./BottomNavigation";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-type TabType = "grid" | "colorTools" | "projects" | "library";
+type TabType = "grid" | "colorTools" | "colorMixer" | "projects" | "library";
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
