@@ -23,6 +23,15 @@ const AppLayout = () => {
   const { logout } = useAuth();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
+  // Debug mobile detection
+  useEffect(() => {
+    console.log('Mobile detection:', { 
+      isMobile, 
+      windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'undefined',
+      mediaQuery: typeof window !== 'undefined' ? window.matchMedia("(max-width: 768px)").matches : 'undefined'
+    });
+  }, [isMobile]);
+
   // Improve mobile experience
   useEffect(() => {
     // Update existing viewport meta tag for better mobile UX
