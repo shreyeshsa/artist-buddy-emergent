@@ -94,19 +94,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('Attempting login for:', email);
+      console.log('=== LOGIN ATTEMPT ===');
+      console.log('Email:', email);
+      console.log('Password length:', password.length);
 
       if (!email || !password) {
+        console.log('Missing email or password');
         toast.error('Please enter both email and password.');
         return false;
       }
 
       const users = getStoredUsers();
+      console.log('Stored users count:', users.length);
+      console.log('Stored users:', users.map(u => ({ email: u.email, id: u.id })));
+      
       const hashedPassword = await hashPassword(password);
+      console.log('Hashed password:', hashedPassword);
 
       const foundUser = users.find(u => u.email === email && u.password === hashedPassword);
+      console.log('Found user:', foundUser ? 'YES' : 'NO');
 
       if (!foundUser) {
+        console.log('User not found or password mismatch');
         toast.error('Invalid email or password.');
         return false;
       }
@@ -118,11 +127,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user_metadata: foundUser.phone_number ? { phone_number: foundUser.phone_number } : undefined,
       };
 
+      console.log('Setting user session:', userSession);
       setUser(userSession);
       setIsAuthenticated(true);
       saveCurrentUser(userSession);
 
-      console.log('Login successful:', email);
+      console.log('Login successful for:', email);
       toast.success("Login successful!");
       return true;
     } catch (error: any) {
