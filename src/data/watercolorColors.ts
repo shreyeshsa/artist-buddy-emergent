@@ -29,7 +29,7 @@ export const watercolorColors: WatercolorColor[] = [
   { id: 17, brand: "Winsor & Newton", name: "Winsor Green", code: "WN719", color: "#00A86B", sets: ["24", "36"] },
   { id: 18, brand: "Winsor & Newton", name: "Winsor Blue", code: "WN707", color: "#0047AB", sets: ["12", "24", "36"] },
   { id: 19, brand: "Winsor & Newton", name: "Sepia", code: "WN609", color: "#704214", sets: ["24", "36"] },
-  { id: 20, brand: "Winsor & Newton", name: "Ivory Black", code: WN331", color: "#0A0A0A", sets: ["12", "24", "36"] },
+  { id: 20, brand: "Winsor & Newton", name: "Ivory Black", code: "WN331", color: "#0A0A0A", sets: ["12", "24", "36"] },
   { id: 21, brand: "Winsor & Newton", name: "Chinese White", code: "WN150", color: "#FFFFFF", sets: ["24", "36"] },
   { id: 22, brand: "Winsor & Newton", name: "Raw Umber", code: "WN554", color: "#826644", sets: ["24", "36"] },
   { id: 23, brand: "Winsor & Newton", name: "Hooker's Green", code: "WN311", color: "#234F1E", sets: ["24", "36"] },
