@@ -6,15 +6,23 @@ export function useMediaQuery(query: string): boolean {
 
   useEffect(() => {
     const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
+    // Set initial value
+    setMatches(media.matches);
+    
+    const listener = (e: MediaQueryListEvent) => {
+      setMatches(e.matches);
+    };
+    
+    // Use the newer addListener for better compatibility
+    if (media.addEventListener) {
+      media.addEventListener("change", listener);
+      return () => media.removeEventListener("change", listener);
+    } else {
+      // Fallback for older browsers
+      media.addListener(listener);
+      return () => media.removeListener(listener);
     }
-    
-    const listener = () => setMatches(media.matches);
-    media.addEventListener("change", listener);
-    
-    return () => media.removeEventListener("change", listener);
-  }, [matches, query]);
+  }, [query]);
 
   return matches;
 }
