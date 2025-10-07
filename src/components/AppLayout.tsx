@@ -8,16 +8,14 @@ import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMe
 import { Grid2x2 as Grid, PenTool, Palette, BookOpen, LogOut, Droplet, Pipette, FolderOpen, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GridTab from "@/components/tabs/GridTab";
-import ColorPickerTab from "@/components/tabs/ColorPickerTab";
-import ColorTheoryTab from "@/components/tabs/ColorTheoryTab";
-import ColorMixerTab from "@/components/tabs/ColorMixerTab";
-import YourPaletteTab from "@/components/tabs/YourPaletteTab";
+import ColorToolsTab from "@/components/tabs/ColorToolsTab";
+import LibraryTab from "@/components/tabs/LibraryTab";
 import { ProjectsTab } from "@/components/tabs/ProjectsTab";
 import { PaletteProjectsTab } from "@/components/tabs/PaletteProjectsTab";
 import { BottomNavigation } from "./BottomNavigation";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-type TabType = "grid" | "colorPicker" | "colorTheory" | "yourPalette" | "library";
+type TabType = "grid" | "colorTools" | "projects" | "library";
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState<TabType>("grid");
@@ -102,14 +100,12 @@ const AppLayout = () => {
 
   const tabComponents = {
     grid: <GridTab />,
-    colorPicker: <ColorPickerTab />,
-    colorTheory: <ColorTheoryTab />,
-    yourPalette: <YourPaletteTab />,
-    library: (
+    colorTools: <ColorToolsTab />,
+    projects: (
       <div className="p-4 pb-20">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">Library</h2>
-          <p className="text-muted-foreground">Manage your projects and saved palettes</p>
+          <h2 className="text-2xl font-bold mb-2">Projects</h2>
+          <p className="text-muted-foreground">Manage your saved grids and palettes</p>
         </div>
         <div className="space-y-6">
           <div>
@@ -123,13 +119,13 @@ const AppLayout = () => {
         </div>
       </div>
     ),
+    library: <LibraryTab />,
   };
 
   const tabs = [
-    { id: "grid", label: "Grids", icon: <Grid className="h-5 w-5" /> },
-    { id: "colorPicker", label: "Picker", icon: <Pipette className="h-5 w-5" /> },
-    { id: "colorTheory", label: "Theory", icon: <Palette className="h-5 w-5" /> },
-    { id: "yourPalette", label: "Palette", icon: <BookOpen className="h-5 w-5" /> },
+    { id: "grid", label: "Grid", icon: <Grid className="h-5 w-5" /> },
+    { id: "colorTools", label: "Color Tools", icon: <Pipette className="h-5 w-5" /> },
+    { id: "projects", label: "Projects", icon: <FolderOpen className="h-5 w-5" /> },
     { id: "library", label: "Library", icon: <Library className="h-5 w-5" /> },
   ];
 

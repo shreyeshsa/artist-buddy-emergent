@@ -1,16 +1,26 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Settings, Upload } from "lucide-react";
+import { Settings, Upload, Download, Save } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import GridCanvas from "@/components/grid/GridCanvas";
 import CanvasSettings from "@/components/grid/CanvasSettings";
 import GridSettings from "@/components/grid/GridSettings";
-import ExportSettings from "@/components/grid/ExportSettings";
+import { saveProject } from "@/utils/databaseUtils";
 
 const STANDARD_DPI = 96;
 const CM_TO_PIXELS = STANDARD_DPI / 2.54;
@@ -32,6 +42,9 @@ const GridTab = () => {
 
   const [image, setImage] = usePersistedState<string | null>("grid_image", null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -103,48 +116,6 @@ const GridTab = () => {
 
       ctx.drawImage(canvas, 0, 0);
 
-      const includeGridInfoCheckbox = document.getElementById('include-grid-info') as HTMLInputElement;
-      if (includeGridInfoCheckbox && includeGridInfoCheckbox.checked && !showGridNumbers) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        const padding = 8;
-        const infoFontSize = 12;
-        ctx.font = `${infoFontSize}px Arial`;
-
-        const gridSizeText = `Grid: ${formatGridSize(gridSize)}${gridUnit}`;
-
-        let paperWidth, paperHeight, unitLabel;
-        if (customUnit === "cm") {
-          paperWidth = customWidth;
-          paperHeight = customHeight;
-          unitLabel = "cm";
-        } else {
-          paperWidth = customWidth;
-          paperHeight = customHeight;
-          unitLabel = "in";
-        }
-
-        const orientationText = orientation.charAt(0).toUpperCase() + orientation.slice(1);
-        const infoText = `${gridSizeText} | Paper: ${paperWidth}×${paperHeight}${unitLabel} (${canvasSize.toUpperCase()} ${orientationText})`;
-
-        const textWidth = ctx.measureText(infoText).width;
-
-        ctx.fillRect(
-          tempCanvas.width - textWidth - padding * 2,
-          tempCanvas.height - infoFontSize - padding * 2,
-          textWidth + padding * 2,
-          infoFontSize + padding * 2
-        );
-
-        ctx.textAlign = "right";
-        ctx.textBaseline = "bottom";
-        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-        ctx.fillText(
-          infoText,
-          tempCanvas.width - padding,
-          tempCanvas.height - padding
-        );
-      }
-
       let filename = `grid-${Date.now()}`;
       let mimeType = 'image/png';
       let extension = 'png';
@@ -172,6 +143,51 @@ const GridTab = () => {
     }
   };
 
+  const handleSaveProject = async () => {
+    if (!projectName.trim()) {
+      toast.error("Please enter a project name");
+      return;
+    }
+
+    setIsSaving(true);
+
+    const canvas = document.querySelector('canvas');
+    let canvasImageData = null;
+
+    if (canvas) {
+      canvasImageData = canvas.toDataURL('image/png');
+    }
+
+    const projectData = {
+      image,
+      canvasSize,
+      orientation,
+      customWidth,
+      customHeight,
+      customUnit,
+      canvasImage: canvasImageData,
+    };
+
+    const gridSettings = {
+      gridSize,
+      lineWidth,
+      lineOpacity,
+      showDiagonals,
+      showGridNumbers,
+      lineColor,
+      gridUnit,
+    };
+
+    const result = await saveProject(projectName, projectData, gridSettings);
+
+    setIsSaving(false);
+
+    if (result) {
+      setProjectName("");
+      setSaveDialogOpen(false);
+    }
+  };
+
   return (
     <div className="relative h-full">
       <input
@@ -185,7 +201,7 @@ const GridTab = () => {
       {!image ? (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] px-4">
           <div className="text-center space-y-4 max-w-md">
-            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-artify-pink to-artify-purple rounded-full flex items-center justify-center">
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
               <Upload className="w-12 h-12 text-white" />
             </div>
             <h3 className="text-2xl font-bold">Start Creating</h3>
@@ -195,7 +211,7 @@ const GridTab = () => {
             <Button
               onClick={() => fileInputRef.current?.click()}
               size="lg"
-              className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90 shadow-lg"
+              className="bg-gradient-to-r from-blue-500 to-teal-500 hover:opacity-90 shadow-lg"
             >
               <Upload className="w-5 h-5 mr-2" />
               Upload Image
@@ -204,131 +220,52 @@ const GridTab = () => {
         </div>
       ) : (
         <>
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b p-3 flex justify-between items-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setImage(null);
-                toast.info('Canvas cleared');
-              }}
-            >
-              Clear Canvas
-            </Button>
+          <div className="p-4 pb-20">
+            <div className="relative">
+              <GridCanvas
+                ref={canvasRef}
+                image={image}
+                canvasSize={canvasSize}
+                orientation={orientation}
+                customWidth={customWidth}
+                customHeight={customHeight}
+                customUnit={customUnit}
+                gridSize={gridSize}
+                lineWidth={lineWidth}
+                lineOpacity={lineOpacity}
+                showDiagonals={showDiagonals}
+                showGridNumbers={showGridNumbers}
+                lineColor={lineColor}
+                gridUnit={gridUnit}
+                formatGridSize={formatGridSize}
+              />
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="w-4 h-4 mr-1" />
-                Change Image
-              </Button>
-
-              {isMobile ? (
-                <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
-                  <DrawerTrigger asChild>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
-                    >
-                      <Settings className="w-4 h-4 mr-1" />
-                      Settings
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent className="max-h-[85vh]">
-                    <DrawerHeader>
-                      <DrawerTitle>Grid Settings</DrawerTitle>
-                    </DrawerHeader>
-                    <div className="px-4 pb-8 overflow-y-auto">
-                      <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
-                        <TabsList className="grid w-full grid-cols-3 mb-4">
-                          <TabsTrigger value="canvas">Canvas</TabsTrigger>
-                          <TabsTrigger value="grid">Grid</TabsTrigger>
-                          <TabsTrigger value="export">Export</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="canvas" className="space-y-4">
-                          <CanvasSettings
-                            canvasSize={canvasSize}
-                            setCanvasSize={setCanvasSize}
-                            orientation={orientation}
-                            setOrientation={setOrientation}
-                            customWidth={customWidth}
-                            customHeight={customHeight}
-                            customUnit={customUnit}
-                            onCustomDimensionsChange={handleCustomDimensionsChange}
-                          />
-                        </TabsContent>
-
-                        <TabsContent value="grid" className="space-y-4">
-                          <GridSettings
-                            gridSize={gridSize}
-                            setGridSize={setGridSize}
-                            lineWidth={lineWidth}
-                            setLineWidth={setLineWidth}
-                            lineOpacity={lineOpacity}
-                            setLineOpacity={setLineOpacity}
-                            showDiagonals={showDiagonals}
-                            setShowDiagonals={setShowDiagonals}
-                            showGridNumbers={showGridNumbers}
-                            setShowGridNumbers={setShowGridNumbers}
-                            lineColor={lineColor}
-                            setLineColor={setLineColor}
-                            gridUnit={gridUnit}
-                            setGridUnit={setGridUnit}
-                            formatGridSize={formatGridSize}
-                          />
-                        </TabsContent>
-
-                        <TabsContent value="export" className="space-y-4">
-                          <ExportSettings onExport={exportCanvas} />
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-                  </DrawerContent>
-                </Drawer>
-              ) : (
+              <div className="fixed top-20 right-4 z-20 flex flex-col gap-2">
                 <Button
-                  variant="default"
-                  size="sm"
                   onClick={exportCanvas}
-                  className="bg-gradient-to-r from-artify-pink to-artify-purple hover:opacity-90"
+                  size="icon"
+                  className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-teal-500 hover:opacity-90"
+                  title="Export Image"
                 >
-                  Export
+                  <Download className="h-5 w-5" />
                 </Button>
-              )}
+                <Button
+                  onClick={() => setSaveDialogOpen(true)}
+                  size="icon"
+                  className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90"
+                  title="Save Project"
+                >
+                  <Save className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
-          </div>
-
-          <div className="p-4">
-            <GridCanvas
-              ref={canvasRef}
-              image={image}
-              canvasSize={canvasSize}
-              orientation={orientation}
-              customWidth={customWidth}
-              customHeight={customHeight}
-              customUnit={customUnit}
-              gridSize={gridSize}
-              lineWidth={lineWidth}
-              lineOpacity={lineOpacity}
-              showDiagonals={showDiagonals}
-              showGridNumbers={showGridNumbers}
-              lineColor={lineColor}
-              gridUnit={gridUnit}
-              formatGridSize={formatGridSize}
-            />
 
             {!isMobile && (
               <div className="mt-6 max-w-4xl mx-auto">
                 <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
                     <TabsTrigger value="canvas">Canvas Settings</TabsTrigger>
                     <TabsTrigger value="grid">Grid Settings</TabsTrigger>
-                    <TabsTrigger value="export">Export Settings</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="canvas" className="space-y-4">
@@ -363,16 +300,114 @@ const GridTab = () => {
                       formatGridSize={formatGridSize}
                     />
                   </TabsContent>
-
-                  <TabsContent value="export" className="space-y-4">
-                    <ExportSettings onExport={exportCanvas} />
-                  </TabsContent>
                 </Tabs>
               </div>
             )}
           </div>
+
+          {isMobile && (
+            <div className="fixed bottom-20 right-4 z-20">
+              <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DrawerTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90"
+                  >
+                    <Settings className="h-6 w-6" />
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="max-h-[85vh]">
+                  <DrawerHeader>
+                    <DrawerTitle>Grid Settings</DrawerTitle>
+                  </DrawerHeader>
+                  <div className="px-4 pb-8 overflow-y-auto">
+                    <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab}>
+                      <TabsList className="grid w-full grid-cols-2 mb-4">
+                        <TabsTrigger value="canvas">Canvas</TabsTrigger>
+                        <TabsTrigger value="grid">Grid</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="canvas" className="space-y-4">
+                        <CanvasSettings
+                          canvasSize={canvasSize}
+                          setCanvasSize={setCanvasSize}
+                          orientation={orientation}
+                          setOrientation={setOrientation}
+                          customWidth={customWidth}
+                          customHeight={customHeight}
+                          customUnit={customUnit}
+                          onCustomDimensionsChange={handleCustomDimensionsChange}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="grid" className="space-y-4">
+                        <GridSettings
+                          gridSize={gridSize}
+                          setGridSize={setGridSize}
+                          lineWidth={lineWidth}
+                          setLineWidth={setLineWidth}
+                          lineOpacity={lineOpacity}
+                          setLineOpacity={setLineOpacity}
+                          showDiagonals={showDiagonals}
+                          setShowDiagonals={setShowDiagonals}
+                          showGridNumbers={showGridNumbers}
+                          setShowGridNumbers={setShowGridNumbers}
+                          lineColor={lineColor}
+                          setLineColor={setLineColor}
+                          gridUnit={gridUnit}
+                          setGridUnit={setGridUnit}
+                          formatGridSize={formatGridSize}
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            </div>
+          )}
         </>
       )}
+
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Project</DialogTitle>
+            <DialogDescription>
+              Give your project a name to save it for later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                placeholder="My Grid Project"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveProject();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSaveDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveProject}
+              disabled={isSaving || !projectName.trim()}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

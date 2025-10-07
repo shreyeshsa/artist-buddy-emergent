@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, Palette } from "lucide-react";
+import { Trash2, Palette, Download } from "lucide-react";
 import { getUserPaletteProjects, deletePaletteProject } from "@/utils/databaseUtils";
 import type { PaletteProject } from "@/lib/supabase";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,52 @@ export function PaletteProjectsTab({ onLoadPalette }: PaletteProjectsTabProps) {
     }
   };
 
+  const handleDownload = (palette: PaletteProject) => {
+    if (!Array.isArray(palette.colors) || palette.colors.length === 0) {
+      toast.error("No colors in this palette");
+      return;
+    }
+
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        toast.error("Failed to create canvas");
+        return;
+      }
+
+      const swatchSize = 100;
+      canvas.width = palette.colors.length * swatchSize;
+      canvas.height = swatchSize;
+
+      palette.colors.forEach((color: any, index: number) => {
+        const hexColor = color.hex || color;
+        ctx.fillStyle = hexColor;
+        ctx.fillRect(index * swatchSize, 0, swatchSize, swatchSize);
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error("Failed to create image");
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${palette.palette_name}-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success("Palette downloaded successfully");
+      });
+    } catch (error) {
+      toast.error("Failed to download palette");
+      console.error(error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -71,7 +118,7 @@ export function PaletteProjectsTab({ onLoadPalette }: PaletteProjectsTabProps) {
           <CardContent className="flex flex-col items-center justify-center p-8">
             <Palette className="w-16 h-16 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center">
-              No palettes saved yet. Create and save your first palette in the Your Palette tab!
+              No palettes saved yet. Create and save your first palette in the Color Tools tab!
             </p>
           </CardContent>
         </Card>
@@ -84,6 +131,14 @@ export function PaletteProjectsTab({ onLoadPalette }: PaletteProjectsTabProps) {
                   <CardTitle className="flex items-center justify-between">
                     <span>{palette.palette_name}</span>
                     <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleDownload(palette)}
+                        variant="outline"
+                        size="sm"
+                        title="Download Palette"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
                       {onLoadPalette && (
                         <Button
                           onClick={() => handleLoad(palette)}
@@ -124,20 +179,36 @@ export function PaletteProjectsTab({ onLoadPalette }: PaletteProjectsTabProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {Array.isArray(palette.colors) && palette.colors.map((color: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-2 p-2 border rounded"
-                      >
-                        <div
-                          className="w-12 h-12 rounded border"
-                          style={{ backgroundColor: color.hex || color }}
-                        />
-                        <span className="text-sm">{color.name || color.hex || color}</span>
+                  {Array.isArray(palette.colors) && palette.colors.length > 0 ? (
+                    <>
+                      <div className="flex rounded-lg overflow-hidden border mb-3 h-16">
+                        {palette.colors.map((color: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex-1"
+                            style={{ backgroundColor: color.hex || color }}
+                            title={color.name || color.hex || color}
+                          />
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex flex-wrap gap-2">
+                        {palette.colors.map((color: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 p-2 border rounded text-xs"
+                          >
+                            <div
+                              className="w-6 h-6 rounded border"
+                              style={{ backgroundColor: color.hex || color }}
+                            />
+                            <span className="text-sm">{color.name || color.hex || color}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No colors in this palette</p>
+                  )}
                 </CardContent>
               </Card>
             ))}

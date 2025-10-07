@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, FolderOpen } from "lucide-react";
+import { Trash2, FolderOpen, Download } from "lucide-react";
 import { getUserProjects, deleteProject } from "@/utils/databaseUtils";
 import type { Project } from "@/lib/supabase";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,26 @@ export function ProjectsTab({ onLoadProject }: ProjectsTabProps) {
     }
   };
 
+  const handleDownload = (project: Project) => {
+    if (!project.project_data?.canvasImage) {
+      toast.error("No image available to download");
+      return;
+    }
+
+    try {
+      const link = document.createElement('a');
+      link.href = project.project_data.canvasImage;
+      link.download = `${project.project_name}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Grid downloaded successfully");
+    } catch (error) {
+      toast.error("Failed to download grid");
+      console.error(error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -84,6 +105,14 @@ export function ProjectsTab({ onLoadProject }: ProjectsTabProps) {
                   <CardTitle className="flex items-center justify-between">
                     <span>{project.project_name}</span>
                     <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleDownload(project)}
+                        variant="outline"
+                        size="sm"
+                        title="Download Grid"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
                       {onLoadProject && (
                         <Button
                           onClick={() => handleLoad(project)}
@@ -123,6 +152,17 @@ export function ProjectsTab({ onLoadProject }: ProjectsTabProps) {
                     Created: {new Date(project.created_at).toLocaleDateString()} at {new Date(project.created_at).toLocaleTimeString()}
                   </CardDescription>
                 </CardHeader>
+                {project.project_data?.canvasImage && (
+                  <CardContent>
+                    <div className="relative rounded-lg overflow-hidden border bg-muted/10">
+                      <img
+                        src={project.project_data.canvasImage}
+                        alt={project.project_name}
+                        className="w-full h-auto object-contain max-h-48"
+                      />
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             ))}
           </div>

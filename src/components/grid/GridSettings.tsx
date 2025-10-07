@@ -9,35 +9,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface GridSettingsProps {
   gridSize: number;
+  setGridSize: (size: number) => void;
   lineWidth: number;
+  setLineWidth: (width: number) => void;
   lineOpacity: number;
+  setLineOpacity: (opacity: number) => void;
   showDiagonals: boolean;
+  setShowDiagonals: (show: boolean) => void;
   showGridNumbers: boolean;
+  setShowGridNumbers: (show: boolean) => void;
   lineColor: string;
-  onGridSizeChange: (size: number) => void;
-  onLineWidthChange: (width: number) => void;
-  onLineOpacityChange: (opacity: number) => void;
-  onShowDiagonalsChange: (show: boolean) => void;
-  onShowGridNumbersChange: (show: boolean) => void;
-  onLineColorChange: (color: string) => void;
+  setLineColor: (color: string) => void;
+  gridUnit: string;
+  setGridUnit: (unit: string) => void;
+  formatGridSize: (size: number) => string;
 }
 
 const GridSettings = ({
   gridSize,
+  setGridSize,
   lineWidth,
+  setLineWidth,
   lineOpacity,
+  setLineOpacity,
   showDiagonals,
+  setShowDiagonals,
   showGridNumbers,
+  setShowGridNumbers,
   lineColor,
-  onGridSizeChange,
-  onLineWidthChange,
-  onLineOpacityChange,
-  onShowDiagonalsChange,
-  onShowGridNumbersChange,
-  onLineColorChange
+  setLineColor,
+  gridUnit,
+  setGridUnit,
+  formatGridSize
 }: GridSettingsProps) => {
   const [customGridSize, setCustomGridSize] = useState(gridSize);
-  const [gridUnit, setGridUnit] = useState("cm");
   
   // Define standard DPI for print (300 DPI is standard for print quality)
   const STANDARD_DPI = 96; // Standard screen DPI
@@ -53,7 +58,7 @@ const GridSettings = ({
   
   const handleGridSizeChange = (value: number) => {
     setCustomGridSize(value);
-    onGridSizeChange(value);
+    setGridSize(value);
   };
 
   // Convert pixel size to display unit with better accuracy
@@ -159,7 +164,7 @@ const GridSettings = ({
             max={gridUnit === "cm" ? Math.round(CM_TO_PIXELS * 10) : Math.round(INCH_TO_PIXELS * 4)} // Max: 10cm or 4 inches
             step={1}
             value={[gridSize]}
-            onValueChange={(values) => onGridSizeChange(values[0])}
+            onValueChange={(values) => setGridSize(values[0])}
             className="mb-6"
           />
           
@@ -171,7 +176,7 @@ const GridSettings = ({
                   "px-3 py-1 border rounded-md text-xs",
                   gridSize === size ? "bg-primary text-primary-foreground" : "bg-card"
                 )}
-                onClick={() => onGridSizeChange(size)}
+                onClick={() => setGridSize(size)}
               >
                 {formatDisplayValue(size)} {gridUnit}
               </button>
@@ -192,7 +197,7 @@ const GridSettings = ({
           max={5}
           step={1}
           value={[lineWidth]}
-          onValueChange={(values) => onLineWidthChange(values[0])}
+          onValueChange={(values) => setLineWidth(values[0])}
         />
       </div>
       
@@ -208,7 +213,7 @@ const GridSettings = ({
           max={100}
           step={5}
           value={[lineOpacity]}
-          onValueChange={(values) => onLineOpacityChange(values[0])}
+          onValueChange={(values) => setLineOpacity(values[0])}
         />
       </div>
       
@@ -224,7 +229,7 @@ const GridSettings = ({
             id="line-color"
             type="color"
             value={lineColor}
-            onChange={(e) => onLineColorChange(e.target.value)}
+            onChange={(e) => setLineColor(e.target.value)}
             className="w-full"
           />
         </div>
@@ -236,7 +241,7 @@ const GridSettings = ({
         <Switch 
           id="show-diagonals" 
           checked={showDiagonals}
-          onCheckedChange={onShowDiagonalsChange}
+          onCheckedChange={setShowDiagonals}
         />
       </div>
       
@@ -246,7 +251,7 @@ const GridSettings = ({
         <Switch 
           id="show-grid-numbers" 
           checked={showGridNumbers}
-          onCheckedChange={onShowGridNumbersChange}
+          onCheckedChange={setShowGridNumbers}
         />
       </div>
     </div>

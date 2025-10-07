@@ -10,26 +10,24 @@ import { toast } from "sonner";
 
 interface CanvasSettingsProps {
   canvasSize: string;
+  setCanvasSize: (value: string) => void;
   orientation: string;
+  setOrientation: (value: string) => void;
   customWidth: number;
   customHeight: number;
   customUnit: "cm" | "inches";
-  onCanvasSizeChange: (value: string) => void;
-  onOrientationChange: (value: string) => void;
   onCustomDimensionsChange: (width: number, height: number, unit: "cm" | "inches") => void;
-  onImportClick: () => void;
 }
 
 const CanvasSettings = ({
   canvasSize,
+  setCanvasSize,
   orientation,
+  setOrientation,
   customWidth,
   customHeight,
   customUnit,
-  onCanvasSizeChange,
-  onOrientationChange,
-  onCustomDimensionsChange,
-  onImportClick
+  onCustomDimensionsChange
 }: CanvasSettingsProps) => {
   const [width, setWidth] = useState<number>(customWidth);
   const [height, setHeight] = useState<number>(customHeight);
@@ -101,7 +99,7 @@ const CanvasSettings = ({
 
   // Update custom dimensions when paper size or orientation changes
   const handleCanvasSizeChange = (size: string) => {
-    onCanvasSizeChange(size);
+    setCanvasSize(size);
     
     if (size !== "custom") {
       // Set standard dimensions based on paper size
@@ -122,7 +120,7 @@ const CanvasSettings = ({
 
   // Update dimensions when orientation changes
   const handleOrientationChange = (newOrientation: string) => {
-    onOrientationChange(newOrientation);
+    setOrientation(newOrientation);
     
     if (canvasSize !== "custom") {
       // Swap dimensions for standard paper sizes
@@ -221,16 +219,6 @@ const CanvasSettings = ({
         </div>
       </div>
       
-      <div className="pt-4">
-        <Button 
-          variant="outline"
-          className="w-full"
-          onClick={onImportClick}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Import Image
-        </Button>
-      </div>
     </div>
   );
 };
