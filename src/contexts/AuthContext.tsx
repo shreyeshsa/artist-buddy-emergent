@@ -144,27 +144,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string, phoneNumber?: string): Promise<boolean> => {
     try {
-      console.log('Attempting signup for:', email);
+      console.log('=== SIGNUP ATTEMPT ===');
+      console.log('Email:', email);
+      console.log('Password length:', password.length);
+      console.log('Phone number:', phoneNumber);
 
       if (!email || !email.includes('@')) {
+        console.log('Invalid email format');
         toast.error('Please enter a valid email address.');
         return false;
       }
 
       if (!password || password.length < 6) {
+        console.log('Password too short');
         toast.error('Password must be at least 6 characters long.');
         return false;
       }
 
       const users = getStoredUsers();
+      console.log('Existing users count:', users.length);
 
       const existingUser = users.find(u => u.email === email);
       if (existingUser) {
+        console.log('Email already exists');
         toast.error('This email is already registered. Please login instead.');
         return false;
       }
 
       const hashedPassword = await hashPassword(password);
+      console.log('Generated hash for new user:', hashedPassword);
 
       const newUser: StoredUser = {
         id: crypto.randomUUID(),
@@ -176,8 +184,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       users.push(newUser);
       saveStoredUsers(users);
+      console.log('User saved to localStorage, total users:', users.length);
 
-      console.log('Signup successful:', email);
+      console.log('Signup successful for:', email);
       toast.success("Account created successfully! You can now login.");
       return true;
     } catch (error: any) {
