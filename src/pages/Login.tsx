@@ -87,8 +87,13 @@ const Login = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('=== SIGNUP FORM SUBMITTED ===');
+    console.log('Form email:', email);
+    console.log('Form password length:', password.length);
+    console.log('Form phone:', phoneNumber);
     setIsLoading(true);
     const success = await signup(email, password, phoneNumber);
+    console.log('Signup result:', success);
     setIsLoading(false);
     if (success) {
       setEmail("");
