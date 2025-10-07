@@ -124,17 +124,17 @@ const Login = () => {
             </CardTitle>
             <CardDescription className="text-center">
               Sign in or create an account to access your artist toolkit
-              <div className="text-xs mt-1 text-muted-foreground">
-                Powered by <a
-                  href="https://aasuri.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-artify-pink hover:underline"
-                >
-                  aasuri.com
-                </a>
-              </div>
             </CardDescription>
+            <div className="text-xs text-center text-muted-foreground">
+              Powered by <a
+                href="https://aasuri.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-artify-pink hover:underline"
+              >
+                aasuri.com
+              </a>
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
