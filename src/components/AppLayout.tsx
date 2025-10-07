@@ -102,6 +102,7 @@ const AppLayout = () => {
   const tabComponents = {
     grid: <GridTab />,
     colorTools: <ColorToolsTab />,
+    colorMixer: <ColorMixerTab />,
     projects: (
       <div className="p-4 pb-20">
         <div className="mb-6">
@@ -126,6 +127,7 @@ const AppLayout = () => {
   const tabs = [
     { id: "grid", label: "Grid", icon: <Grid className="h-5 w-5" /> },
     { id: "colorTools", label: "Color Tools", icon: <Pipette className="h-5 w-5" /> },
+    { id: "colorMixer", label: "Color Mixer", icon: <Palette className="h-5 w-5" /> },
     { id: "projects", label: "Projects", icon: <FolderOpen className="h-5 w-5" /> },
     { id: "library", label: "Library", icon: <Library className="h-5 w-5" /> },
   ];
