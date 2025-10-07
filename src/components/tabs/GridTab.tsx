@@ -221,7 +221,8 @@ const GridTab = () => {
       ) : (
         <>
           <div className="p-4 pb-20">
-            <div className="mb-4 flex gap-2 flex-wrap">
+            {/* Action buttons positioned above canvas */}
+            <div className="mb-4 flex gap-2 flex-wrap justify-center">
               <Button
                 onClick={exportCanvas}
                 className="bg-gradient-to-r from-blue-500 to-teal-500 hover:opacity-90"
@@ -238,6 +239,7 @@ const GridTab = () => {
               </Button>
             </div>
 
+            {/* Canvas with integrated controls */}
             <div className="relative">
               <GridCanvas
                 ref={canvasRef}
@@ -258,7 +260,6 @@ const GridTab = () => {
                 onUploadImage={handleImageUpload}
                 onClearCanvas={() => setImage(null)}
               />
-
             </div>
 
             {!isMobile && (
