@@ -491,6 +491,7 @@ const GridCanvas = ({
               size="sm"
               onClick={() => setImageScale(prev => Math.min(prev + 0.1, 3))}
               disabled={fitToCanvas}
+              title="Zoom In"
             >
               +
             </Button>
@@ -499,6 +500,7 @@ const GridCanvas = ({
               size="sm"
               onClick={() => setImageScale(prev => Math.max(prev - 0.1, 0.5))}
               disabled={fitToCanvas}
+              title="Zoom Out"
             >
               -
             </Button>
@@ -511,6 +513,7 @@ const GridCanvas = ({
                 setFitToCanvas(false);
               }}
               disabled={!imagePosition.x && !imagePosition.y && imageScale === 1}
+              title="Reset Position and Zoom"
             >
               Reset
             </Button>
@@ -518,6 +521,7 @@ const GridCanvas = ({
               variant="outline"
               size="sm"
               onClick={onClearCanvas}
+              title="Clear Canvas"
             >
               Clear Canvas
             </Button>
@@ -527,6 +531,7 @@ const GridCanvas = ({
             size="icon"
             onClick={handleUploadClick}
             className="h-8 w-8"
+            title="Upload New Image"
           >
             <Upload className="h-4 w-4" />
           </Button>
